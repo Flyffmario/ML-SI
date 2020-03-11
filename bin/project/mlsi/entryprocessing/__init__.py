@@ -8,6 +8,8 @@ Created on Tue Mar 10 14:24:54 2020
 import os
 import numpy as np
 
+
+
 #%%
 
 
@@ -193,11 +195,15 @@ def writeEntry(fichier,sample_name,specter_name,x,y):
     fichier.write('\n')
 
 def concatenateEntries(folder="Flavus/Flavus_Manip1"):
+    
     '''
     Parcours une arborescence de fichiers et concatène les spectres trouvés en deux fichiers référençant clones et autres.
     
     folder est le chemin vers la racine de tous les fichiers 
     '''
+    
+    
+    
     try:
         os.remove("Spectres_autres_Concatenes_Flavus1.txt")
         os.remove("Spectres_clones_Concatenes_Flavus1.txt")
