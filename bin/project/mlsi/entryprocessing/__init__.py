@@ -8,7 +8,8 @@ Created on Tue Mar 10 14:24:54 2020
 import os
 import numpy as np
 
-
+from tkinter import Tk
+from tkinter.filedialog import askopenfilename, askdirectory
 
 #%%
 
@@ -194,7 +195,7 @@ def writeEntry(fichier,sample_name,specter_name,x,y):
     fichier.write(str(y[len(y)-1]))
     fichier.write('\n')
 
-def concatenateEntries(folder="Flavus/Flavus_Manip1"):
+def concatenateEntries():
     
     '''
     Parcours une arborescence de fichiers et concatène les spectres trouvés en deux fichiers référençant clones et autres.
@@ -202,15 +203,18 @@ def concatenateEntries(folder="Flavus/Flavus_Manip1"):
     folder est le chemin vers la racine de tous les fichiers 
     '''
     
+    Tk().withdraw() # we don't want a full GUI, so keep the root window from appearing
+    print("[INFO] A folder explorer window has been created. Please look for the folder where all the entries you want to concatene are.")
+    folder = askdirectory() # show an "Open" dialog box and return the path to the selected folder
     
+    filename="Spectres_Concatenes_"+folder.split('/')[-1]+".txt"
     
     try:
-        os.remove("Spectres_autres_Concatenes_Flavus1.txt")
-        os.remove("Spectres_clones_Concatenes_Flavus1.txt")
+        os.remove(filename)
     except:
         pass
 
-    with open("Spectres_autres_Concatenes_Flavus1.txt", "w") as autres, open("Spectres_clones_Concatenes_Flavus1.txt","w") as clones:
+    with open(filename, "w") as current_file:
         
         #développer deux fichiers : l'un avec les clones, l'un avec les autres
         #à partir de là, on pourra entraîner des algos assez facilement
@@ -227,23 +231,19 @@ def concatenateEntries(folder="Flavus/Flavus_Manip1"):
             if(directory[1]!=[]):
                 if(directory[1][0]=='pdata'):
                     #Parfait on est au bon endroit
-                    [master,submaster,sample_name,specter_name,one,oneSLine]=directory[0].split('/')
+                    print(directory[0])
+                    [master,sample_name,specter_name,one,oneSLine]=directory[0].split('\\')
                     
                     #un nom d'entrée s'organise ainsi
                     #J3 calibration 24102019_autres_20191024-1011017172_1214
                     #J5 calibration 26102019_clones masques_20191026-1011017215_I7
                     #on peut spliter sur les _ et prendre l'index 1, vérifier l'orthographe et écrire accordément
-                    
-                    [jour_calibration,cat,date_et_numero,souche]=sample_name.split('_')
+                    #[jour_calibration,cat,date_et_numero,souche]=sample_name.split('_')
                     
                     [x,y]=MSI2(directory[0],lissage=2)
-                    #j'ai cauchemardé sur des tailles de graphes différents suivant les entrées
                     x=x[:len(y)]
                     
-                    if(cat=="autres"):
-                        writeEntry(autres,sample_name,specter_name,x,y)
-                    elif(cat=="clones masques"):
-                        writeEntry(clones,sample_name,specter_name,x,y)
+                    writeEntry(current_file,sample_name,specter_name,x,y)
                 else:
                     pass
             else:
@@ -328,6 +328,33 @@ def extractCompactedEntries(fichier,limit=10):
             L.append(donnee_organisee)
             i+=1
         return L
+    
+def importCompactExtractEntries():
+    '''
+    Import an entry database in the form of a txt, create a compacted version if it isn't existing in the root folder of the imported file, and extracts its contents.
+    
+    No parameters needed, a file explorer will open in order to let the user choose the file to import.
+    '''
+    Tk().withdraw() # we don't want a full GUI, so keep the root window from appearing
+    print("[INFO] A file explorer window has been created. Please look for the file you want to import, compact and extract.")
+    filename = askopenfilename() # show an "Open" dialog box and return the path to the selected file
+    try:
+        try:
+            temp_file=open(filename.split('.txt')[0]+'_compacted.txt','r')
+            temp_file.close()
+            print("[INFO] Processed version of given file already existing in the current path. Skipping...")
+        except:
+             print("[INFO] Processing "+filename.split('/')[-1]+"...")
+             compactEntries(filename)
+             print("[INFO] Process done !")
+             
+        #Si la version compactée n'existait pas, elle existe maintenant.
+        print("[INFO] Extracting "+filename.split('/')[-1].split('.txt')[0]+"_compacted.txt"+"...")
+        data=extractCompactedEntries(filename.split('.txt')[0]+'_compacted.txt',limit=20)
+        return data
+    except:
+        print("[ERROR] Not a Valid path or Not a .txt file or Entries not found/not valid in the mentioned file.")
+
     
 #%%
     
