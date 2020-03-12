@@ -175,6 +175,7 @@ def writeEntry(fichier,sample_name,specter_name,x,y):
     
     '''
     Ecrit une entrée dans le fichier mentionné.
+    Utilisé principalement pour générer une base de données sous forme .txt.
     
     fichier est le chemin vers le fichier texte où écrire.
     sample_name est la référence de l'échantillon.
@@ -195,19 +196,30 @@ def writeEntry(fichier,sample_name,specter_name,x,y):
     fichier.write(str(y[len(y)-1]))
     fichier.write('\n')
 
-def concatenateEntries():
+def concatenateEntries(func_used=MSI2,liss=1):
     
     '''
-    Parcours une arborescence de fichiers et concatène les spectres trouvés en deux fichiers référençant clones et autres.
+    Parcours une arborescence de fichiers et concatène les spectres trouvés en un fichier.
+    Génère un .txt avec toutes les entrées trouvées dans les dossiers enfants.
+    Utilisé pour extraire les entrées d'une arborescence de base de données.
     
-    folder est le chemin vers la racine de tous les fichiers 
+    Exemple sur l'arborescence Flavus :
+        Flavus
+            Flavus_Manip1
+            Flavus_Manip2
+        Supposons que l'on ne souhaite que les données de Flavus_Manip1, on fera pointer l'endroit où tous les spectres sont sur :
+            Flavus/Flavus_Manip1
+        Le .txt contenant tous les spectres sera généré avec le nom "Spectres_Concatenes_Flavus_Manip1.txt" dans le dossier Flavus/
+    
+    func_used est une fonction qui détermine le type de traitement utilisé pour extraire les spectres de la base.
+    liss est une variable correspondant à la quantité de lissage utilisée avec MSI2.
     '''
     
     Tk().withdraw() # we don't want a full GUI, so keep the root window from appearing
     print("[INFO] A folder explorer window has been created. Please look for the folder where all the entries you want to concatene are.")
     folder = askdirectory() # show an "Open" dialog box and return the path to the selected folder
     
-    filename="Spectres_Concatenes_"+folder.split('/')[-1]+".txt"
+    filename=folder+"Spectres_Concatenes_"+folder.split('/')[-1]+".txt"
     
     try:
         os.remove(filename)
@@ -231,16 +243,28 @@ def concatenateEntries():
             if(directory[1]!=[]):
                 if(directory[1][0]=='pdata'):
                     #Parfait on est au bon endroit
-                    print(directory[0])
-                    [master,sample_name,specter_name,one,oneSLine]=directory[0].split('\\')
+                    #print(directory[0])
+                    
+                    #[(other_master,other_master...),direct_master,sample_name,specter_name,one,oneSLine]
+                    #Sélectionner à partir de la fin
+                    #[-1] renvoie oneSLine, [-2] renvoie one, ainsi de suite...
+                    
+                    data_on_path=directory[0].split('\\')
+                    sample_name=data_on_path[-4]
+                    specter_name=data_on_path[-3]
                     
                     #un nom d'entrée s'organise ainsi
                     #J3 calibration 24102019_autres_20191024-1011017172_1214
                     #J5 calibration 26102019_clones masques_20191026-1011017215_I7
+                    #ou ainsi
+                    #BACT_191210_1011001152_1214
+                    
                     #on peut spliter sur les _ et prendre l'index 1, vérifier l'orthographe et écrire accordément
                     #[jour_calibration,cat,date_et_numero,souche]=sample_name.split('_')
+                    #ou
+                    #[type_de_machine,date,numero,souche]=sample_name.split('_')
                     
-                    [x,y]=MSI2(directory[0],lissage=2)
+                    [x,y]=func_used(directory[0],lissage=liss)
                     x=x[:len(y)]
                     
                     writeEntry(current_file,sample_name,specter_name,x,y)
@@ -248,9 +272,6 @@ def concatenateEntries():
                     pass
             else:
                 pass
-            #os.chdir(dir[0])
-
-#concatenateEntries()
 
 #Comme ça prend 10 min, j'ai envie de faire autre chose au milieu
 #Pour m'avertir quand ça finit quand je suis avec le casque avec la musique à fond
