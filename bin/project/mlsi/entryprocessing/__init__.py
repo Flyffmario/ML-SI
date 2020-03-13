@@ -339,7 +339,7 @@ def sortBy(fichier,mode=0):
                 sorting_var=nom_echantillon
             elif (mode==5):
                 #Tri suivant la machine utilisée
-                sortBySpectrometer(fichier)
+
             else:
                 #Aucun tri existant correspondant
                 raise("[ERROR] Invalid mode specified.")
@@ -358,136 +358,6 @@ def sortBy(fichier,mode=0):
         for i in file_dictionnary.keys():
             file_dictionnary[i].close()
             
-def sortByAge(fichier):
-    with open(fichier,'r') as src:
-        fichiers_par_age=dict()
-        for line in src:
-            name=line #nom de l'échantillon
-            [jour_et_calibration,cat,date_et_numero,souche]=line.split('_')
-            [J,temp,calibration]=jour_et_calibration.split(' ')
-            [calibration2,numero]=date_et_numero.split('-')
-            
-
-            [id_spectre,len_x,x_string,len_y,y_string]=extractEntryCharacteristics(src)
-            
-            if (J in fichiers_par_age):
-                #catX existe déjà
-                fichiers_par_age[J].write(name)
-                fichiers_par_age[J].write(id_spectre)
-                fichiers_par_age[J].write(len_x)
-                fichiers_par_age[J].write(x_string)
-                fichiers_par_age[J].write(len_y)
-                fichiers_par_age[J].write(y_string)
-            else:
-                #catX n'existe pas encore
-                fichiers_par_age[J]=open(fichier.split('.txt')[0]+"_"+J+"Sorted.txt",'w')  
-        for i in fichiers_par_age.keys():
-            fichiers_par_age[i].close()
-            
-def sortByCalibrationDate(fichier):
-    with open(fichier,'r') as src:
-        fichiers_par_calibration=dict()
-        for line in src:
-            name=line #nom de l'échantillon
-            [jour_et_calibration,cat,date_et_numero,souche]=line.split('_')
-            [J,temp,calibration]=jour_et_calibration.split(' ')
-
-            [id_spectre,len_x,x_string,len_y,y_string]=extractEntryCharacteristics(src)
-            
-            if (calibration in fichiers_par_calibration):
-                #catX existe déjà
-                fichiers_par_calibration[calibration].write(name)
-                fichiers_par_calibration[calibration].write(id_spectre)
-                fichiers_par_calibration[calibration].write(len_x)
-                fichiers_par_calibration[calibration].write(x_string)
-                fichiers_par_calibration[calibration].write(len_y)
-                fichiers_par_calibration[calibration].write(y_string)
-            else:
-                #catX n'existe pas encore
-                fichiers_par_calibration[calibration]=open(fichier.split('.txt')[0]+"_"+calibration+"Sorted.txt",'w')  
-        for i in fichiers_par_calibration.keys():
-            fichiers_par_calibration[i].close()
-
-def sortByPlateNumber(fichier):
-    with open(fichier,'r') as src:
-        fichiers_par_numero=dict()
-        for line in src:
-            name=line #nom de l'échantillon
-            [jour_et_calibration,cat,date_et_numero,souche]=line.split('_')
-            [J,temp,calibration]=jour_et_calibration.split(' ')
-            [calibration2,numero]=date_et_numero.split('-')
-            
-            [id_spectre,len_x,x_string,len_y,y_string]=extractEntryCharacteristics(src)
-
-            if (numero in fichiers_par_numero):
-                #catX existe déjà
-                fichiers_par_numero[numero].write(name)
-                fichiers_par_numero[numero].write(id_spectre)
-                fichiers_par_numero[numero].write(len_x)
-                fichiers_par_numero[numero].write(x_string)
-                fichiers_par_numero[numero].write(len_y)
-                fichiers_par_numero[numero].write(y_string)
-            else:
-                #catX n'existe pas encore
-                fichiers_par_numero[numero]=open(fichier.split('.txt')[0]+"_"+numero+"Sorted.txt",'w')  
-        for i in fichiers_par_numero.keys():
-            fichiers_par_numero[i].close()
-
-def sortByName(fichier):
-    with open(fichier,'r') as src:
-        fichiers_par_nom_echantillon=dict()
-        for line in src:
-            name=line #nom de l'échantillon
-            [jour_et_calibration,cat,date_et_numero,nom_echantillon]=line.split('_')
-            [J,temp,calibration]=jour_et_calibration.split(' ')
-            [calibration2,numero]=date_et_numero.split('-')
-            nom_echantillon=nom_echantillon.split('\n')[0]
-            
-            [id_spectre,len_x,x_string,len_y,y_string]=extractEntryCharacteristics(src)
-
-            if (nom_echantillon in fichiers_par_nom_echantillon):
-                #catX existe déjà
-                fichiers_par_nom_echantillon[nom_echantillon].write(name)
-                fichiers_par_nom_echantillon[nom_echantillon].write(id_spectre)
-                fichiers_par_nom_echantillon[nom_echantillon].write(len_x)
-                fichiers_par_nom_echantillon[nom_echantillon].write(x_string)
-                fichiers_par_nom_echantillon[nom_echantillon].write(len_y)
-                fichiers_par_nom_echantillon[nom_echantillon].write(y_string)
-            else:
-                #catX n'existe pas encore
-                fichiers_par_nom_echantillon[nom_echantillon]=open(fichier.split('.txt')[0]+"_"+nom_echantillon+"Sorted.txt",'w')  
-        for i in fichiers_par_nom_echantillon.keys():
-            fichiers_par_nom_echantillon[i].close()
-
-def sortBySpectrometer(fichier):
-    fichiers_par_spectrometre=dict()
-    with open(fichier,'r') as src:
-        for line in src:
-            name=line #nom de l'échantillon
-            [jour_et_calibration,cat,date_et_numero,nom_echantillon]=line.split('_')
-            [J,temp,calibration]=jour_et_calibration.split(' ')
-            [calibration2,numero]=date_et_numero.split('-')
-            
-            id_spectre=next(src) #id_spectre
-            len_x=next(src) #len X
-            x_string=next(src) #X
-            len_y=next(src) #len Y
-            y_string=next(src) #Y
-    
-            if (nom_echantillon in fichiers_par_nom_echantillon):
-                #catX existe déjà
-                fichiers_par_nom_echantillon[nom_echantillon].write(name)
-                fichiers_par_nom_echantillon[nom_echantillon].write(id_spectre)
-                fichiers_par_nom_echantillon[nom_echantillon].write(len_x)
-                fichiers_par_nom_echantillon[nom_echantillon].write(x_string)
-                fichiers_par_nom_echantillon[nom_echantillon].write(len_y)
-                fichiers_par_nom_echantillon[nom_echantillon].write(y_string)
-            else:
-                #catX n'existe pas encore
-                fichiers_par_nom_echantillon[nom_echantillon]=open(fichier.split('.txt')[0]+"_"+nom_echantillon+"Sorted.txt",'w')  
-        for i in fichiers_par_nom_echantillon.keys():
-            fichiers_par_nom_echantillon[i].close()
-        
 
 #%%
 
@@ -569,6 +439,7 @@ def importCompactExtractEntries():
     Tk().withdraw() # we don't want a full GUI, so keep the root window from appearing
     print("[INFO] A file explorer window has been created. Please look for the file you want to import, compact and extract.")
     filename = askopenfilename() # show an "Open" dialog box and return the path to the selected file
+    
     try:
         try:
             temp_file=open(filename.split('.txt')[0]+'_compacted.txt','r')
