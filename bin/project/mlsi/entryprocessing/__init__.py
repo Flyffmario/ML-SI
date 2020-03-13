@@ -315,6 +315,12 @@ def sortBy(fichier,mode=0):
         for line in src:
             name=line #nom de l'échantillon
             [jour_et_calibration,cat,date_et_numero,nom_echantillon]=line.split('_')
+            
+            #Dans la nouvelle base de données, un nom d'entrée sera organisée ainsi :
+            #BACT_J3_191210_clone_1011001152_1214_E2
+            #<machine>_<age_de_culture>_<date_de_calibration>_<plaque>_<id_de_l_echantillon>_<methode_d_extraction>
+            #[mach,age,calib,num_plaque,id_ech,mthde]=line.split('_')
+            
             characteristics=[name]+extractEntryCharacteristics(src)
             sorting_var=None
             
@@ -339,7 +345,7 @@ def sortBy(fichier,mode=0):
                 sorting_var=nom_echantillon
             elif (mode==5):
                 #Tri suivant la machine utilisée
-
+                pass
             else:
                 #Aucun tri existant correspondant
                 raise("[ERROR] Invalid mode specified.")
@@ -357,7 +363,44 @@ def sortBy(fichier,mode=0):
                 file_dictionnary[sorting_var]=open(fichier.split('.txt')[0]+"_"+sorting_var+"_Sorted.txt",'w')
         for i in file_dictionnary.keys():
             file_dictionnary[i].close()
-            
+
+def normalizeDatabase():
+    
+    Tk().withdraw() # we don't want a full GUI, so keep the root window from appearing
+    print("[INFO] A folder explorer window has been created. Please look for the folder where all the entries you want to concatene are.")
+    folder = askdirectory() # show an "Open" dialog box and return the path to the selected folder
+    
+    for directory in os.walk(folder):
+        
+        #Finalement, on cherche les échantillons tq leur chemin :
+        #- Donne sur un nom pur, et pas quelque chose type spectre,1,1SLin, pdata ou 1.
+        #   - Donc fichier racine différent de 1, 1SLin, ou pdata
+        #   - Chemin qui ne comporte qu'un backslash
+        #- A des subdirectories, correspondant à des spectres
+        #- N'a pas de fichiers supplémentaires dans sa racine
+        
+        if(len(directory[0].split('\\'))==2):
+            #Fichier Racine seulement !
+            if (len(directory[1])>=1):
+                #Au minimum un spectre
+                #On est au bon endroit
+                
+                #J3 calibration 24102019_autres_20191024-1011017172_1214
+                #                  V
+                #BACT_J3_191210_clone_1011001152_1214_E2
+                
+                name=directory[0].split('\\')[-1]
+                #print(name)
+                compacted_name=name.split(' calibration ')[0]+'_'+name.split(' calibration ')[1]
+                compacted_name='MYCO_'+compacted_name+'_E2'
+                #TERMINER DE SUPPRIMER LA DATE DE CALIBRATION EN DOUBLE
+                #ATTENTION DE CODER AUSSI POUR NORMALISER LES BASES EN MACHINE_ETC
+                
+                print(compacted_name)
+                
+                
+                
+    
 
 #%%
 

@@ -20,7 +20,7 @@ if (root_folder not in sys.path):
 import mlsi.entryprocessing
 
 #mlsi.entryprocessing.concatenateEntries()
-mlsi.entryprocessing.browserSortBy()
+mlsi.entryprocessing.normalizeDatabase()
 
 
 #data = mlsi.entryprocessing.importCompactExtractEntries()
