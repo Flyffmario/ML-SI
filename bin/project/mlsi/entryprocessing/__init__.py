@@ -171,6 +171,14 @@ def MSI2(folder,lissage=1):
 
 #%%
 
+def extractEntryCharacteristics(src):
+    id_spectre=next(src) #id_spectre
+    len_x=next(src) #len X
+    x_string=next(src) #X
+    len_y=next(src) #len Y
+    y_string=next(src) #Y
+    return [id_spectre,len_x,x_string,len_y,y_string]
+
 def writeEntry(fichier,sample_name,specter_name,x,y):
     
     '''
@@ -279,8 +287,16 @@ def concatenateEntries(func_used=MSI2,liss=1):
 #freq = 440  # Hz
 #os.system('play -nq -t alsa synth {} sine {}'.format(duration, freq))
 #%%
-
+    
+def browserSortBy():
+    Tk().withdraw() # we don't want a full GUI, so keep the root window from appearing
+    print("[INFO] A folder explorer window has been created. Please look for the folder where all the entries you want to concatene are.")
+    fichier = askopenfilename() # show an "Open" dialog box and return the path to the selected folder
+    mode=int(input("Specify mode used (0:type / 1:age / 2:calibration / 3:plate / 4:nom_echantillon)"))
+    sortBy(fichier,mode)
+           
 def sortBy(fichier,mode=0):
+    
     '''
     Trie automatiquement un fichier contenant des entrées suivant ce qui est demandé d'être trié.
     
@@ -294,59 +310,53 @@ def sortBy(fichier,mode=0):
         - 3 trie suivant le numéro de plaque.
     '''
     
-    if (mode==0):
-        #Tri suivant Clone ou non
-        sortByClone(fichier)
-    elif (mode==1):
-        #Tri suivant J_culture
-        sortByAge(fichier)
-    elif (mode==2):
-        #Tri suivant J_calibration
-        sortByCalibrationDate(fichier)
-    elif (mode==3):
-        #Tri suivant la plaque
-        sortByPlateNumber(fichier)
-    elif (mode==4):
-        #Tri suivant la position sur la plaque
-        sortByPosition(fichier)
-    else:
-        #Aucun tri existant correspondant
-        pass
-    
-def browserSortBy():
-    Tk().withdraw() # we don't want a full GUI, so keep the root window from appearing
-    print("[INFO] A folder explorer window has been created. Please look for the folder where all the entries you want to concatene are.")
-    fichier = askopenfilename() # show an "Open" dialog box and return the path to the selected folder
-    mode=int(input("Specify mode used (0:type / 1:age / 2:calibration / 3:plate / 4:position)"))
-    sortBy(fichier,mode)
-           
-def sortByClone(fichier):
     with open(fichier,'r') as src:
-        fichiers_par_clone=dict()
+        file_dictionnary=dict()
         for line in src:
             name=line #nom de l'échantillon
-            [jour_et_calibration,cat,date_et_numero,souche]=line.split('_')
-            [J,temp,calibration]=jour_et_calibration.split(' ')
-
-            id_spectre=next(src) #id_spectre
-            len_x=next(src) #len X
-            x_string=next(src) #X
-            len_y=next(src) #len Y
-            y_string=next(src) #Y
-
-            if (cat in fichiers_par_clone):
+            [jour_et_calibration,cat,date_et_numero,nom_echantillon]=line.split('_')
+            characteristics=[name]+extractEntryCharacteristics(src)
+            sorting_var=None
+            
+            if (mode==0):
+                #Tri suivant Clone ou non
+                sorting_var=cat
+            elif (mode==1):
+                #Tri suivant J_culture
+                [J,temp,calibration]=jour_et_calibration.split(' ')
+                sorting_var=J
+            elif (mode==2):
+                #Tri suivant J_calibration
+                [J,temp,calibration]=jour_et_calibration.split(' ')
+                sorting_var=calibration
+            elif (mode==3):
+                #Tri suivant la plaque
+                [calibration2,numero]=date_et_numero.split('-')
+                sorting_var=numero
+            elif (mode==4):
+                #Tri suivant la nom_echantillon sur la plaque
+                nom_echantillon=nom_echantillon.split('\n')[0]
+                sorting_var=nom_echantillon
+            elif (mode==5):
+                #Tri suivant la machine utilisée
+                sortBySpectrometer(fichier)
+            else:
+                #Aucun tri existant correspondant
+                raise("[ERROR] Invalid mode specified.")
+            
+            if (sorting_var in file_dictionnary):
                 #catX existe déjà
-                fichiers_par_clone[cat].write(name)
-                fichiers_par_clone[cat].write(id_spectre)
-                fichiers_par_clone[cat].write(len_x)
-                fichiers_par_clone[cat].write(x_string)
-                fichiers_par_clone[cat].write(len_y)
-                fichiers_par_clone[cat].write(y_string)
+                file_dictionnary[sorting_var].write(characteristics[0])
+                file_dictionnary[sorting_var].write(characteristics[1])
+                file_dictionnary[sorting_var].write(characteristics[2])
+                file_dictionnary[sorting_var].write(characteristics[3])
+                file_dictionnary[sorting_var].write(characteristics[4])
+                file_dictionnary[sorting_var].write(characteristics[5])
             else:
                 #catX n'existe pas encore
-                fichiers_par_clone[cat]=open(fichier.split('.txt')[0]+"_"+cat+"Sorted.txt",'w')
-        for i in fichiers_par_clone.keys():
-            fichiers_par_clone[i].close()
+                file_dictionnary[sorting_var]=open(fichier.split('.txt')[0]+"_"+sorting_var+"_Sorted.txt",'w')
+        for i in file_dictionnary.keys():
+            file_dictionnary[i].close()
             
 def sortByAge(fichier):
     with open(fichier,'r') as src:
@@ -355,13 +365,11 @@ def sortByAge(fichier):
             name=line #nom de l'échantillon
             [jour_et_calibration,cat,date_et_numero,souche]=line.split('_')
             [J,temp,calibration]=jour_et_calibration.split(' ')
+            [calibration2,numero]=date_et_numero.split('-')
+            
 
-            id_spectre=next(src) #id_spectre
-            len_x=next(src) #len X
-            x_string=next(src) #X
-            len_y=next(src) #len Y
-            y_string=next(src) #Y
-
+            [id_spectre,len_x,x_string,len_y,y_string]=extractEntryCharacteristics(src)
+            
             if (J in fichiers_par_age):
                 #catX existe déjà
                 fichiers_par_age[J].write(name)
@@ -384,12 +392,8 @@ def sortByCalibrationDate(fichier):
             [jour_et_calibration,cat,date_et_numero,souche]=line.split('_')
             [J,temp,calibration]=jour_et_calibration.split(' ')
 
-            id_spectre=next(src) #id_spectre
-            len_x=next(src) #len X
-            x_string=next(src) #X
-            len_y=next(src) #len Y
-            y_string=next(src) #Y
-
+            [id_spectre,len_x,x_string,len_y,y_string]=extractEntryCharacteristics(src)
+            
             if (calibration in fichiers_par_calibration):
                 #catX existe déjà
                 fichiers_par_calibration[calibration].write(name)
@@ -413,11 +417,7 @@ def sortByPlateNumber(fichier):
             [J,temp,calibration]=jour_et_calibration.split(' ')
             [calibration2,numero]=date_et_numero.split('-')
             
-            id_spectre=next(src) #id_spectre
-            len_x=next(src) #len X
-            x_string=next(src) #X
-            len_y=next(src) #len Y
-            y_string=next(src) #Y
+            [id_spectre,len_x,x_string,len_y,y_string]=extractEntryCharacteristics(src)
 
             if (numero in fichiers_par_numero):
                 #catX existe déjà
@@ -433,36 +433,61 @@ def sortByPlateNumber(fichier):
         for i in fichiers_par_numero.keys():
             fichiers_par_numero[i].close()
 
-def sortByPosition(fichier):
+def sortByName(fichier):
     with open(fichier,'r') as src:
-        fichiers_par_position=dict()
+        fichiers_par_nom_echantillon=dict()
         for line in src:
             name=line #nom de l'échantillon
-            [jour_et_calibration,cat,date_et_numero,position]=line.split('_')
+            [jour_et_calibration,cat,date_et_numero,nom_echantillon]=line.split('_')
             [J,temp,calibration]=jour_et_calibration.split(' ')
             [calibration2,numero]=date_et_numero.split('-')
-            position=position.split('\n')[0]
+            nom_echantillon=nom_echantillon.split('\n')[0]
+            
+            [id_spectre,len_x,x_string,len_y,y_string]=extractEntryCharacteristics(src)
+
+            if (nom_echantillon in fichiers_par_nom_echantillon):
+                #catX existe déjà
+                fichiers_par_nom_echantillon[nom_echantillon].write(name)
+                fichiers_par_nom_echantillon[nom_echantillon].write(id_spectre)
+                fichiers_par_nom_echantillon[nom_echantillon].write(len_x)
+                fichiers_par_nom_echantillon[nom_echantillon].write(x_string)
+                fichiers_par_nom_echantillon[nom_echantillon].write(len_y)
+                fichiers_par_nom_echantillon[nom_echantillon].write(y_string)
+            else:
+                #catX n'existe pas encore
+                fichiers_par_nom_echantillon[nom_echantillon]=open(fichier.split('.txt')[0]+"_"+nom_echantillon+"Sorted.txt",'w')  
+        for i in fichiers_par_nom_echantillon.keys():
+            fichiers_par_nom_echantillon[i].close()
+
+def sortBySpectrometer(fichier):
+    fichiers_par_spectrometre=dict()
+    with open(fichier,'r') as src:
+        for line in src:
+            name=line #nom de l'échantillon
+            [jour_et_calibration,cat,date_et_numero,nom_echantillon]=line.split('_')
+            [J,temp,calibration]=jour_et_calibration.split(' ')
+            [calibration2,numero]=date_et_numero.split('-')
             
             id_spectre=next(src) #id_spectre
             len_x=next(src) #len X
             x_string=next(src) #X
             len_y=next(src) #len Y
             y_string=next(src) #Y
-
-            if (position in fichiers_par_position):
+    
+            if (nom_echantillon in fichiers_par_nom_echantillon):
                 #catX existe déjà
-                fichiers_par_position[position].write(name)
-                fichiers_par_position[position].write(id_spectre)
-                fichiers_par_position[position].write(len_x)
-                fichiers_par_position[position].write(x_string)
-                fichiers_par_position[position].write(len_y)
-                fichiers_par_position[position].write(y_string)
+                fichiers_par_nom_echantillon[nom_echantillon].write(name)
+                fichiers_par_nom_echantillon[nom_echantillon].write(id_spectre)
+                fichiers_par_nom_echantillon[nom_echantillon].write(len_x)
+                fichiers_par_nom_echantillon[nom_echantillon].write(x_string)
+                fichiers_par_nom_echantillon[nom_echantillon].write(len_y)
+                fichiers_par_nom_echantillon[nom_echantillon].write(y_string)
             else:
                 #catX n'existe pas encore
-                fichiers_par_position[position]=open(fichier.split('.txt')[0]+"_"+position+"Sorted.txt",'w')  
-        for i in fichiers_par_position.keys():
-            fichiers_par_position[i].close()
-
+                fichiers_par_nom_echantillon[nom_echantillon]=open(fichier.split('.txt')[0]+"_"+nom_echantillon+"Sorted.txt",'w')  
+        for i in fichiers_par_nom_echantillon.keys():
+            fichiers_par_nom_echantillon[i].close()
+        
 
 #%%
 
