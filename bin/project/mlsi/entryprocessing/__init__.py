@@ -18,14 +18,14 @@ from tkinter.filedialog import askopenfilename, askdirectory
 les fonctions importées ici sont purement à but de test pour comprendre le fonctionnement
 '''
 
-def tof2mass(tof, ML1, ML2, ML3):
+def __tof2mass(tof, ML1, ML2, ML3):
     A = ML3
     B = np.sqrt(1E12/ML1)
     C = ML2 - tof
     if (A == 0): return ((C * C)/(B * B))
     else: return (((-B + np.sqrt((B * B) - (4 * A * C))) / (2 * A))**2)
 
-def lire_spectre_Bruker(folder):
+def __lire_spectre_Bruker(folder):
     #folder=list_dir_to1SLin('C:\\Users\\...\\MonDossierDeSpectres_a_Analyser') 
     #folder=list_dir_to1SLin('my_path_panel')
     
@@ -59,7 +59,7 @@ def lire_spectre_Bruker(folder):
             parse_var = parameters.find('$AQ_DATE= ')
             #        DATE = parameters[parse_var + 11:parse_var + 21].split(' ')[0]
             #Traduction TOF à Mass
-            raw_mz_scale = tof2mass(DELAY + np.arange(TD) * DW, ML1, ML2, ML3)
+            raw_mz_scale = __tof2mass(DELAY + np.arange(TD) * DW, ML1, ML2, ML3)
             raw_mz_scale2= raw_mz_scale.tolist()
             #Intensité de chaque pic
             raw_intensite = np.zeros((len(files), TD), dtype = np.int32)
@@ -87,7 +87,7 @@ def MSI2(folder,lissage=1):
     
     #La majeure partie de cette fonction a été récupérée à partir d'une autre fonction.
     
-    spectre=lire_spectre_Bruker(folder)
+    spectre=__lire_spectre_Bruker(folder)
     
     #Importation des Données
     contenu=spectre[0][0]
@@ -171,7 +171,7 @@ def MSI2(folder,lissage=1):
 
 #%%
 
-def extractEntryCharacteristics(src):
+def __extractEntryCharacteristics(src):
     id_spectre=next(src) #id_spectre
     len_x=next(src) #len X
     x_string=next(src) #X
@@ -179,7 +179,7 @@ def extractEntryCharacteristics(src):
     y_string=next(src) #Y
     return [id_spectre,len_x,x_string,len_y,y_string]
 
-def writeEntry(fichier,sample_name,specter_name,x,y):
+def __writeEntry(fichier,sample_name,specter_name,x,y):
     
     '''
     Ecrit une entrée dans le fichier mentionné.
@@ -275,7 +275,7 @@ def concatenateEntries(func_used=MSI2,liss=1):
                     [x,y]=func_used(directory[0],lissage=liss)
                     x=x[:len(y)]
                     
-                    writeEntry(current_file,sample_name,specter_name,x,y)
+                    __writeEntry(current_file,sample_name,specter_name,x,y)
                 else:
                     pass
             else:
@@ -293,9 +293,9 @@ def browserSortBy():
     print("[INFO] A folder explorer window has been created. Please look for the folder where all the entries you want to concatene are.")
     fichier = askopenfilename() # show an "Open" dialog box and return the path to the selected folder
     mode=int(input("Specify mode used (0:type / 1:age / 2:calibration / 3:plate / 4:nom_echantillon)"))
-    sortBy(fichier,mode)
+    __sortBy(fichier,mode)
            
-def sortBy(fichier,mode=0):
+def __sortBy(fichier,mode=0):
     
     '''
     Trie automatiquement un fichier contenant des entrées suivant ce qui est demandé d'être trié.
@@ -321,7 +321,7 @@ def sortBy(fichier,mode=0):
             #<machine>_<age_de_culture>_<date_de_calibration>_<plaque>_<id_de_l_echantillon>_<methode_d_extraction>
             #[mach,age,calib,num_plaque,id_ech,mthde]=line.split('_')
             
-            characteristics=[name]+extractEntryCharacteristics(src)
+            characteristics=[name]+__extractEntryCharacteristics(src)
             sorting_var=None
             
             if (mode==0):
@@ -366,37 +366,39 @@ def sortBy(fichier,mode=0):
 
 def normalizeDatabase():
     
+    '''
+    Transformes un nom de fichier en un autre :
+            J3 calibration 24102019_autres_20191024-1011017172_1214
+                              V
+            BACT_J3_191210_clone_1011001152_1214_E2
+    Normalisant ainsi la base de données.
+    '''
+    
     Tk().withdraw() # we don't want a full GUI, so keep the root window from appearing
     print("[INFO] A folder explorer window has been created. Please look for the folder where all the entries you want to concatene are.")
     folder = askdirectory() # show an "Open" dialog box and return the path to the selected folder
-    
     for directory in os.walk(folder):
         
-        #Finalement, on cherche les échantillons tq leur chemin :
-        #- Donne sur un nom pur, et pas quelque chose type spectre,1,1SLin, pdata ou 1.
-        #   - Donc fichier racine différent de 1, 1SLin, ou pdata
-        #   - Chemin qui ne comporte qu'un backslash
-        #- A des subdirectories, correspondant à des spectres
-        #- N'a pas de fichiers supplémentaires dans sa racine
+        #Finalement, c'est le dossier le plus à la racine du fichier où on regarde qui nous intéresse
+        name_of_folder_being_looked=directory[0].split(folder)[1][1:]
         
-        if(len(directory[0].split('\\'))==2):
+        if(len(name_of_folder_being_looked.split('/'))==1 and len(name_of_folder_being_looked)!=0):
             #Fichier Racine seulement !
-            if (len(directory[1])>=1):
-                #Au minimum un spectre
-                #On est au bon endroit
-                
-                #J3 calibration 24102019_autres_20191024-1011017172_1214
-                #                  V
-                #BACT_J3_191210_clone_1011001152_1214_E2
-                
-                name=directory[0].split('\\')[-1]
-                #print(name)
-                compacted_name=name.split(' calibration ')[0]+'_'+name.split(' calibration ')[1]
-                compacted_name='MYCO_'+compacted_name+'_E2'
-                #TERMINER DE SUPPRIMER LA DATE DE CALIBRATION EN DOUBLE
-                #ATTENTION DE CODER AUSSI POUR NORMALISER LES BASES EN MACHINE_ETC
-                
-                print(compacted_name)
+
+            
+
+            
+            name=name_of_folder_being_looked
+            compacted_name=name.split(' calibration ')[0]+'_'+name.split(' calibration ')[1].split('_',1)[1]
+            compacted_name='MYCO_'+compacted_name.replace('-','_')+'_E2'
+            final_name=compacted_name.split('_')
+            final_name[2],final_name[3]=final_name[3],final_name[2]
+            
+            final_name='_'.join(final_name)
+            
+            #print(name_of_folder_being_looked)
+            os.rename(directory[0],folder+'/'+final_name)
+    print("[INFO] Each entry in the specified folder has been correctly renamed.")
                 
                 
                 
@@ -404,7 +406,7 @@ def normalizeDatabase():
 
 #%%
 
-def compactEntries(fichier):
+def __compactEntries(fichier):
     
     '''
     Prends une base de données organisée dans un .txt ainsi :
@@ -446,7 +448,7 @@ def compactEntries(fichier):
 #compactEntries("Spectres_clones_Concatenes_Flavus1.txt")
 
 #D'abord tout extraire
-def extractCompactedEntries(fichier,limit=10):
+def __extractCompactedEntries(fichier,limit=10):
     
     '''
     Fonction qui extrait d'un txt avec la mention _compacted un certain nombre d'entrées.
@@ -490,12 +492,12 @@ def importCompactExtractEntries():
             print("[INFO] Processed version of given file already existing in the current path. Skipping...")
         except:
              print("[INFO] Processing "+filename.split('/')[-1]+"...")
-             compactEntries(filename)
+             __compactEntries(filename)
              print("[INFO] Process done !")
              
         #Si la version compactée n'existait pas, elle existe maintenant.
         print("[INFO] Extracting "+filename.split('/')[-1].split('.txt')[0]+"_compacted.txt"+"...")
-        data=extractCompactedEntries(filename.split('.txt')[0]+'_compacted.txt',limit=20)
+        data=__extractCompactedEntries(filename.split('.txt')[0]+'_compacted.txt',limit=20)
         return data
     except:
         print("[ERROR] Not a Valid path or Not a .txt file or Entries not found/not valid in the mentioned file.")
