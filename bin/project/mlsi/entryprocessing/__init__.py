@@ -364,13 +364,15 @@ def __sortBy(fichier,mode=0):
         for i in file_dictionnary.keys():
             file_dictionnary[i].close()
 
-def normalizeDatabase():
+def normalizeDatabaseModel1():
     
     '''
     Transformes un nom de fichier en un autre :
+        
             J3 calibration 24102019_autres_20191024-1011017172_1214
                               V
             BACT_J3_191210_clone_1011001152_1214_E2
+            
     Normalisant ainsi la base de données.
     '''
     
@@ -384,10 +386,7 @@ def normalizeDatabase():
         
         if(len(name_of_folder_being_looked.split('/'))==1 and len(name_of_folder_being_looked)!=0):
             #Fichier Racine seulement !
-
-            
-
-            
+        
             name=name_of_folder_being_looked
             compacted_name=name.split(' calibration ')[0]+'_'+name.split(' calibration ')[1].split('_',1)[1]
             compacted_name='MYCO_'+compacted_name.replace('-','_')+'_E2'
@@ -400,9 +399,37 @@ def normalizeDatabase():
             os.rename(directory[0],folder+'/'+final_name)
     print("[INFO] Each entry in the specified folder has been correctly renamed.")
                 
-                
-                
+def normalizeDatabaseModel2():
+    '''
+    Transformes un nom de fichier en un autre :
+                BACT_191210_1011001152_1214
+                              V
+            BACT_J3_191210_clone_1011001152_1214_E2
+    Normalisant ainsi la base de données.
+    '''
     
+    Tk().withdraw() # we don't want a full GUI, so keep the root window from appearing
+    print("[INFO] A folder explorer window has been created. Please look for the folder where all the entries you want to concatene are.")
+    folder = askdirectory() # show an "Open" dialog box and return the path to the selected folder
+    print(folder)
+    
+    category=folder.split('/')[-1]
+    
+    for directory in os.walk(folder):
+        
+        #Finalement, c'est le dossier le plus à la racine du fichier où on regarde qui nous intéresse
+        name_of_folder_being_looked=directory[0].split(folder)[1][1:]
+        #print(name_of_folder_being_looked)
+        
+        if(len(name_of_folder_being_looked.split('/'))==1 and len(name_of_folder_being_looked)!=0):
+            contents=name_of_folder_being_looked.split('_')
+            if(contents[1]=='191210'):
+                Jour='J3'
+                methode='E2'
+            final_name='_'.join([contents[0],Jour,contents[1],category,contents[2],contents[3],methode])
+            os.rename(directory[0],folder+'/'+final_name)
+        
+    print("[INFO] Each entry in the specified folder has been correctly renamed.")
 
 #%%
 
@@ -444,10 +471,6 @@ def __compactEntries(fichier):
             
             trgt.write(z_string)
 
-#compactEntries("Spectres_autres_Concatenes_Flavus1.txt")
-#compactEntries("Spectres_clones_Concatenes_Flavus1.txt")
-
-#D'abord tout extraire
 def __extractCompactedEntries(fichier,limit=10):
     
     '''

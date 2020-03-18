@@ -19,9 +19,5 @@ if (root_folder not in sys.path):
 
 import mlsi.entryprocessing
 
-#mlsi.entryprocessing.concatenateEntries()
-mlsi.entryprocessing.normalizeDatabase()
-
-
 #data = mlsi.entryprocessing.importCompactExtractEntries()
 #mlsi.learning.learn(autres,clones)

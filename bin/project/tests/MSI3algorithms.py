@@ -43,6 +43,7 @@ def build_raw_spectrum(spot, parameters, fid):
     #     if raw_mz_scale[i]>1998 and raw_mz_scale[i]<2002:
     #         print(i, raw_mz_scale[i],raw_intensite [i])
     return raw_mz_scale, raw_intensite, DATE
+
 def define_peaks(liste_masse, liste_intensite,liss = 6):
     if liste_masse == []or liste_intensite == []:#None:
         return [0,0,0]#None [0,0,0]pour quadruplets
@@ -56,6 +57,7 @@ def define_peaks(liste_masse, liste_intensite,liss = 6):
             montee = 0#se remet à zéro si descend
         list_pairs_mz_montee.append([liste_masse[i+2],montee])
     return(list_pairs_mz_montee)
+    
 def linearize_spectrum(list_pairs_mz_montee,debut=2000, min_montee =20):
     len1=len(list_pairs_mz_montee)
     linearized=[]
@@ -113,213 +115,6 @@ def preparation_spectre(liste_masse, liste_intensite):
     spectre=select_point_pairs(linearize_spectrum(define_peaks(liste_masse, liste_intensite,liss = 6),debut=2000,min_montee=20), max_diff=10000, taille_produit=1)
     # print("prepare", spectre[:2])
     return spectre
-# def scorage(spectre, ref, seuil2 = 400, seuil_score=5):#pour quadruplets seuil1 = 0.9997,
-#     ## print("dans scorage",spectre[0],ref[0])
-#     if ref=='[]' or ref==[''] or ref=='':
-#         #print("ref vide")
-#         return 0
-#     elif spectre == '[0,0]' or spectre == None:
-#         return 0
-#     # if type(ref)==str:
-#     #     print("error str bq")
-#     else:
-#         lenA = len(spectre)
-#         lenB = len(ref)
-#         finref=int(round(float(ref[-1])))
-#         # for i in range(lenB):
-#         #     ref[i]=float(ref[i])
-#         # if sum(ref)==0:
-#         #     return 0
-#         print("scorage len spectre", lenA,"len ref", lenB)
-#         score = 0
-#         debut=0
-#         analyse=[]
-#
-#         for i in range(0,lenA-2,2):
-#             analyse.append(i)
-#             if i >= 400 and score == 0:
-#                 print("abandon",i)
-#                 analyse.append("abandon")
-#                 return score
-#             else:
-#                 analyse.append((i,"sp",int(float(spectre[i])),int(float(spectre[i+1]))))
-#                 #print("sp",i, int(float(spectre[i])),int(float(spectre[i+1])))
-#                 A0 = int(float(spectre[i]))#diff
-#                 A1 = int(round(float(spectre[i+1])))# pointA
-#                 for j in range(debut,lenB-3,3):
-#                     analyse.append((i,j,"ref",int(float(ref[j])),int(float(ref[j+1])),int(float(ref[j+2]))))
-#                     #if j==0:
-#                     #print("ref", j, int(float(ref[j])),int(float(ref[j+1])),int(float(ref[j+2])))
-#                     B0 = int(float(ref[j]))#mindiff
-#                     B1 = int(float(ref[j+1]))
-#                     B2 = int(round(float(ref[j+2])))# pointB
-#                     if A0 < B0 :
-#                         debut = j
-#                         analyse.append("A0<B0")
-#                         break
-#                     else :
-#                         analyse.append("A0>B0")
-#                         if A0 <= B1:
-#                             analyse.append("distance OK")
-#                             if fabs(A1 - B2) < seuil2:#+i+j
-#                                 debut=j+3
-#                                 score += 1
-#                                 analyse.append(("distance OK score+1", score))
-#                                 #listij+=[(i,j,score,'+i+j+score2')]
-#                                 break
-#                             else :#+i
-#                                 analyse.append(("distance OK pas le même point", score))
-#                                 debut = j
-#                                 break
-#                         else:# A0 > B1
-#                             analyse.append("A0>B1")
-#                             if B1 > finref:
-#                                 analyse.append("A0>fin ref")
-#                                 break
-#                             else:
-#                                 analyse.append("A0>B1 continue")
-#                                 debut = j+3
-#                                 continue
-#
-#
-#             #listijs.append(listij)
-#             #print("score",score)
-#         print(analyse)
-#         return round(((4*score)+100)/9,2)
-
-# def lisse_spectre(liste_masse, liste_intensite,liss = 6
-# def preparation_spectre_while(liste_masse, liste_intensite,liss = 6,debut=2000,max_diff=10000, taille_produit=1):
-#     if liste_masse == []:#None:
-#         return [0,0,0]#None
-#     spectre_liss = np.convolve(liste_intensite, np.ones(liss)/liss,"valid")
-#     couples_mz_montee = []
-#     montee = 0
-#     i = 0
-#     while i < len(spectre_liss)- 1:
-#         if spectre_liss[i+1] > spectre_liss[i]:
-#             montee = montee + spectre_liss[i+1] - spectre_liss[i]# delta d'intensités entre X voisins tant que augmente
-#             i+=1
-#         else:
-#             montee = 0#se remet à zéro si descend
-#             i+=1
-#         couples_mz_montee.append([liste_masse[i+2],montee])
-#     #print("lisse",spectre[-20:])
-# #     return spectre
-# # def montees(spectre,):
-# #     if spectre == None:
-# #         return None
-#     len1=len(couples_mz_montee)
-#     linear=[]
-#     j=0
-#     while j < len1-1:
-#         if couples_mz_montee[j][0] < debut: # 490000à peu près m/z à 2400 et 450000 à 2000
-#             j+=1#linear+=[[0,0]]
-#         elif couples_mz_montee[j+1][1] < couples_mz_montee[j][1] and couples_mz_montee[j][1]>20:
-#             if j<len1:
-#                 linear+= [[int(10000*sqrt(couples_mz_montee[j][0])),sqrt(couples_mz_montee[j][1])]]  # linearisation des j+=mz #idem pour les montees
-#                 j+=1
-#             else:
-#                 j+=1
-#                 #linear+=[[0,0]]
-#         else:
-#             j+=1
-#
-#         #     else:
-#         #         linear[j-1][0]=0
-#         #         linear[j-1][1]=0
-#         # else:
-#
-# #     return spectre
-#
-# def lignage(liste, max_diff=10000, taille_produit=1):#liste de tuples ou de listes de 2 elements mz montees
-#     # max_diff = 10000
-#     # taille_produit = 1
-#     if liste == [[0,0]] or liste== None:
-#         #print("couples vides")
-#         return None #[0,0,0]
-#     else:
-#     triplets = []
-#     len2 = len(linear)
-#     #print("length", length)
-#     for i in range(len2):#1 pour le nom
-#         for j in range(i+1,len2):#1 parceque on commece à i+1
-#             #print("monteedanslignage",liste[i][1] * liste[j][1])
-#             produit = (linear[i][1] * linear[j][1])#produit des montées
-#             difference = linear[j][0] - linear[i][0]#distance entre pics
-#             if difference > max_diff and produit > taille_produit:
-#                 pointA = linear[i][0] #emplacement du premier pic
-#                 triplets+=[[difference, produit, pointA]]#essayer avec 200 au lieu de 100
-#                  #couples.append([(difference*0.9997)-100, (difference*1.0003)+100, produit, pointA ])#essayer avec 200 au lieu de 100
-#     triplets = sorted(triplets, key=lambda triplets: triplets[1], reverse = True)[:200]
-#     #print("couples",couples)
-#     triplets=sorted(triplets, key=lambda triplets: triplets[0])
-#     #.split("_")[0]+"_"+liste[0].split("_")[1]+"_"+liste[0].split("_")[2]+"_"+liste[0].split("_")[3])
-#     spectre_ligne=[]
-#     for elt in triplets:
-#         spectre_ligne+=elt
-#     #print("lignage", spectre_ligne)
-#     return spectre_ligne
-
-#
-# # def lignage(liste, max_diff=10000, taille_produit=1):#liste de tuples ou de listes de 2 elements mz montees
-# #     # max_diff = 10000
-# #     # taille_produit = 1
-# #     if liste == [[0,0]] or liste== None:
-# #         #print("couples vides")
-# #         return None #[0,0,0]
-#     # else:
-#     triplets = [[0,0,0]]*200
-#     len2 = len(linearized)
-#     len3 = 0
-#     #ijs=[]
-#     #print("length", length)
-#     for i in range(len2):
-#         for j in range(i+1,len2):
-#             #print("monteedanslignage",liste[i][1] * liste[j][1])
-#             produit = (linearized[i][1] * linearized[j][1])#produit des montées
-#             if produit > triplets [199][1]:
-#                 difference = linearized[j][0] - linearized[i][0]#distance entre pics
-#                 if difference > max_diff and produit > taille_produit:
-#                     pointA = linearized[i][0] #emplacement du premier pic
-#                     triplets.append([difference, produit, pointA])
-#                     del triplets[0]
-#                     #ijs.append([i,j,"boucle0 OK produit max",[difference, produit, pointA],[triplet for triplet in triplets]])
-#                 else:
-#                     continue
-#                     #ijs.append([i,j,"boucle0 diff pas OK",difference,produit])
-#             elif produit <= triplets[0][1]:
-#                 #ijs.append([i,j,"boucle1 produit < min"])
-#                 pass
-#             else:
-#                 for k in range(199):#len-1
-#                     difference = linearized[j][0] - linearized[i][0]#distance entre pics
-#                     if difference > max_diff and produit > taille_produit:
-#                         if produit>triplets[k][1] and produit<=triplets[k+1][1]:
-#                             pointA = linearized[i][0] #emplacement du premier pic
-#                             triplets.insert(k+1,[difference, produit, pointA])
-#                             del triplets[0]
-#                             #ijs.append([i,j,k,"boucle1 OK",[triplet for triplet in triplets]])
-#                             break
-#                         else:
-#                             #ijs.append([i,j,k,produit,"boucle 1 produit cherche sa place "])
-#                             continue
-#                     else:
-#                         #ijs.append([i,j,k,produit,"boucle 1 produit OK diff pas OK"])
-#                         break
-#
-#     triplets = sorted(triplets, key=lambda triplets: triplets[1])
-#
-#     #print("couples",couples)
-#     triplets=sorted(triplets, key=lambda triplets: triplets[0])
-#     #.split("_")[0]+"_"+liste[0].split("_")[1]+"_"+liste[0].split("_")[2]+"_"+liste[0].split("_")[3])
-#     spectre_ligne=[]
-#     for elt in triplets:
-#         spectre_ligne+=[elt[0],elt[2]]
-#     #print(ijs)
-#     #print("lignage", spectre_ligne)
-#     return spectre_ligne
-
-
 
 def scorage(spectre, reference, seuil2 = 400, seuil_score=5):#avec while
     if reference=='[]' or reference==[''] or reference=='' or reference == None:
@@ -872,3 +667,208 @@ def hist_scorage(spectre, reference, seuil2 = 400, seuil_score=5):#avec while
 #             #listijs.append(listij)
 #             #print(score)
 #         return score
+# def scorage(spectre, ref, seuil2 = 400, seuil_score=5):#pour quadruplets seuil1 = 0.9997,
+#     ## print("dans scorage",spectre[0],ref[0])
+#     if ref=='[]' or ref==[''] or ref=='':
+#         #print("ref vide")
+#         return 0
+#     elif spectre == '[0,0]' or spectre == None:
+#         return 0
+#     # if type(ref)==str:
+#     #     print("error str bq")
+#     else:
+#         lenA = len(spectre)
+#         lenB = len(ref)
+#         finref=int(round(float(ref[-1])))
+#         # for i in range(lenB):
+#         #     ref[i]=float(ref[i])
+#         # if sum(ref)==0:
+#         #     return 0
+#         print("scorage len spectre", lenA,"len ref", lenB)
+#         score = 0
+#         debut=0
+#         analyse=[]
+#
+#         for i in range(0,lenA-2,2):
+#             analyse.append(i)
+#             if i >= 400 and score == 0:
+#                 print("abandon",i)
+#                 analyse.append("abandon")
+#                 return score
+#             else:
+#                 analyse.append((i,"sp",int(float(spectre[i])),int(float(spectre[i+1]))))
+#                 #print("sp",i, int(float(spectre[i])),int(float(spectre[i+1])))
+#                 A0 = int(float(spectre[i]))#diff
+#                 A1 = int(round(float(spectre[i+1])))# pointA
+#                 for j in range(debut,lenB-3,3):
+#                     analyse.append((i,j,"ref",int(float(ref[j])),int(float(ref[j+1])),int(float(ref[j+2]))))
+#                     #if j==0:
+#                     #print("ref", j, int(float(ref[j])),int(float(ref[j+1])),int(float(ref[j+2])))
+#                     B0 = int(float(ref[j]))#mindiff
+#                     B1 = int(float(ref[j+1]))
+#                     B2 = int(round(float(ref[j+2])))# pointB
+#                     if A0 < B0 :
+#                         debut = j
+#                         analyse.append("A0<B0")
+#                         break
+#                     else :
+#                         analyse.append("A0>B0")
+#                         if A0 <= B1:
+#                             analyse.append("distance OK")
+#                             if fabs(A1 - B2) < seuil2:#+i+j
+#                                 debut=j+3
+#                                 score += 1
+#                                 analyse.append(("distance OK score+1", score))
+#                                 #listij+=[(i,j,score,'+i+j+score2')]
+#                                 break
+#                             else :#+i
+#                                 analyse.append(("distance OK pas le même point", score))
+#                                 debut = j
+#                                 break
+#                         else:# A0 > B1
+#                             analyse.append("A0>B1")
+#                             if B1 > finref:
+#                                 analyse.append("A0>fin ref")
+#                                 break
+#                             else:
+#                                 analyse.append("A0>B1 continue")
+#                                 debut = j+3
+#                                 continue
+#
+#
+#             #listijs.append(listij)
+#             #print("score",score)
+#         print(analyse)
+#         return round(((4*score)+100)/9,2)
+
+# def lisse_spectre(liste_masse, liste_intensite,liss = 6
+# def preparation_spectre_while(liste_masse, liste_intensite,liss = 6,debut=2000,max_diff=10000, taille_produit=1):
+#     if liste_masse == []:#None:
+#         return [0,0,0]#None
+#     spectre_liss = np.convolve(liste_intensite, np.ones(liss)/liss,"valid")
+#     couples_mz_montee = []
+#     montee = 0
+#     i = 0
+#     while i < len(spectre_liss)- 1:
+#         if spectre_liss[i+1] > spectre_liss[i]:
+#             montee = montee + spectre_liss[i+1] - spectre_liss[i]# delta d'intensités entre X voisins tant que augmente
+#             i+=1
+#         else:
+#             montee = 0#se remet à zéro si descend
+#             i+=1
+#         couples_mz_montee.append([liste_masse[i+2],montee])
+#     #print("lisse",spectre[-20:])
+# #     return spectre
+# # def montees(spectre,):
+# #     if spectre == None:
+# #         return None
+#     len1=len(couples_mz_montee)
+#     linear=[]
+#     j=0
+#     while j < len1-1:
+#         if couples_mz_montee[j][0] < debut: # 490000à peu près m/z à 2400 et 450000 à 2000
+#             j+=1#linear+=[[0,0]]
+#         elif couples_mz_montee[j+1][1] < couples_mz_montee[j][1] and couples_mz_montee[j][1]>20:
+#             if j<len1:
+#                 linear+= [[int(10000*sqrt(couples_mz_montee[j][0])),sqrt(couples_mz_montee[j][1])]]  # linearisation des j+=mz #idem pour les montees
+#                 j+=1
+#             else:
+#                 j+=1
+#                 #linear+=[[0,0]]
+#         else:
+#             j+=1
+#
+#         #     else:
+#         #         linear[j-1][0]=0
+#         #         linear[j-1][1]=0
+#         # else:
+#
+# #     return spectre
+#
+# def lignage(liste, max_diff=10000, taille_produit=1):#liste de tuples ou de listes de 2 elements mz montees
+#     # max_diff = 10000
+#     # taille_produit = 1
+#     if liste == [[0,0]] or liste== None:
+#         #print("couples vides")
+#         return None #[0,0,0]
+#     else:
+#     triplets = []
+#     len2 = len(linear)
+#     #print("length", length)
+#     for i in range(len2):#1 pour le nom
+#         for j in range(i+1,len2):#1 parceque on commece à i+1
+#             #print("monteedanslignage",liste[i][1] * liste[j][1])
+#             produit = (linear[i][1] * linear[j][1])#produit des montées
+#             difference = linear[j][0] - linear[i][0]#distance entre pics
+#             if difference > max_diff and produit > taille_produit:
+#                 pointA = linear[i][0] #emplacement du premier pic
+#                 triplets+=[[difference, produit, pointA]]#essayer avec 200 au lieu de 100
+#                  #couples.append([(difference*0.9997)-100, (difference*1.0003)+100, produit, pointA ])#essayer avec 200 au lieu de 100
+#     triplets = sorted(triplets, key=lambda triplets: triplets[1], reverse = True)[:200]
+#     #print("couples",couples)
+#     triplets=sorted(triplets, key=lambda triplets: triplets[0])
+#     #.split("_")[0]+"_"+liste[0].split("_")[1]+"_"+liste[0].split("_")[2]+"_"+liste[0].split("_")[3])
+#     spectre_ligne=[]
+#     for elt in triplets:
+#         spectre_ligne+=elt
+#     #print("lignage", spectre_ligne)
+#     return spectre_ligne
+
+#
+# # def lignage(liste, max_diff=10000, taille_produit=1):#liste de tuples ou de listes de 2 elements mz montees
+# #     # max_diff = 10000
+# #     # taille_produit = 1
+# #     if liste == [[0,0]] or liste== None:
+# #         #print("couples vides")
+# #         return None #[0,0,0]
+#     # else:
+#     triplets = [[0,0,0]]*200
+#     len2 = len(linearized)
+#     len3 = 0
+#     #ijs=[]
+#     #print("length", length)
+#     for i in range(len2):
+#         for j in range(i+1,len2):
+#             #print("monteedanslignage",liste[i][1] * liste[j][1])
+#             produit = (linearized[i][1] * linearized[j][1])#produit des montées
+#             if produit > triplets [199][1]:
+#                 difference = linearized[j][0] - linearized[i][0]#distance entre pics
+#                 if difference > max_diff and produit > taille_produit:
+#                     pointA = linearized[i][0] #emplacement du premier pic
+#                     triplets.append([difference, produit, pointA])
+#                     del triplets[0]
+#                     #ijs.append([i,j,"boucle0 OK produit max",[difference, produit, pointA],[triplet for triplet in triplets]])
+#                 else:
+#                     continue
+#                     #ijs.append([i,j,"boucle0 diff pas OK",difference,produit])
+#             elif produit <= triplets[0][1]:
+#                 #ijs.append([i,j,"boucle1 produit < min"])
+#                 pass
+#             else:
+#                 for k in range(199):#len-1
+#                     difference = linearized[j][0] - linearized[i][0]#distance entre pics
+#                     if difference > max_diff and produit > taille_produit:
+#                         if produit>triplets[k][1] and produit<=triplets[k+1][1]:
+#                             pointA = linearized[i][0] #emplacement du premier pic
+#                             triplets.insert(k+1,[difference, produit, pointA])
+#                             del triplets[0]
+#                             #ijs.append([i,j,k,"boucle1 OK",[triplet for triplet in triplets]])
+#                             break
+#                         else:
+#                             #ijs.append([i,j,k,produit,"boucle 1 produit cherche sa place "])
+#                             continue
+#                     else:
+#                         #ijs.append([i,j,k,produit,"boucle 1 produit OK diff pas OK"])
+#                         break
+#
+#     triplets = sorted(triplets, key=lambda triplets: triplets[1])
+#
+#     #print("couples",couples)
+#     triplets=sorted(triplets, key=lambda triplets: triplets[0])
+#     #.split("_")[0]+"_"+liste[0].split("_")[1]+"_"+liste[0].split("_")[2]+"_"+liste[0].split("_")[3])
+#     spectre_ligne=[]
+#     for elt in triplets:
+#         spectre_ligne+=[elt[0],elt[2]]
+#     #print(ijs)
+#     #print("lignage", spectre_ligne)
+#     return spectre_ligne
