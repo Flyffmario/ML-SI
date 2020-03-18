@@ -9,7 +9,7 @@ Created on Sat Sep 29 11:31:10 2018
 import os
 import numpy as np
 from math import fabs, sqrt
-
+import time
 
 
 def tof2mass(tof, ML1, ML2, ML3):
@@ -18,8 +18,6 @@ def tof2mass(tof, ML1, ML2, ML3):
     C = ML2 - tof
     if (A == 0): return ((C * C)/(B * B))
     else: return (((-B + np.sqrt((B * B) - (4 * A * C))) / (2 * A))**2)
-    
-
 
 def list_dir_to1SLin(my_path): 
     # my_path = 'C:\\Users\\...\\MonDossierDeSpectres_a_Analyser'
@@ -32,7 +30,6 @@ def list_dir_to1SLin(my_path):
             else:
                 folder.append(dirpath)  
     return folder
-#%%
 
 #%%
 def lire_spectre_Bruker(folder,ijk,mindelta):#mindelta = 20 puis 1000
@@ -194,12 +191,6 @@ def lire_spectre_Bruker(folder,ijk,mindelta):#mindelta = 20 puis 1000
     
     return motifs 
 
-
-
-
-#%%
-
-
 #%%
 def motifs_building(list_dirs,ijk,mindelta):
     print(ijk, time.time())
@@ -215,7 +206,6 @@ def motifs_building(list_dirs,ijk,mindelta):
         i += 1
     
     return liste_motifs
-#%%
 
 #%%
 def scorer(panelspectre,bq,ecart,coeff,epsilon):
@@ -309,29 +299,3 @@ def scorer(panelspectre,bq,ecart,coeff,epsilon):
              liste_score.append((bqsp[0],score))#,listeval
     liste_score2=sorted(liste_score, key= lambda liste_score:liste_score[1],reverse=True)
     return liste_score2
-         
-
-#%%
-
-
-#%%
-t=time.time()
-sc_300_0003_pan1_3_bqsou1_3_800=[]
-for elt in pan_1_3:
-    sc=scorer(elt,bqsouche800_1_3,500,0.0005,100)
-    sc_300_0003_pan1_3_bqsou1_3_800.append((elt[1],sc))
-    if pan_1_3.index(elt) % 50 == 0:
-        print("i",pan_1_3.index(elt))
-
-print(time.time()-t)
-#%%*
-#%%
-nom_csv='sc_300_0003_pan1_3_bqsou1_3_800'
-nom_fichier=sc_300_0003_pan1_3_bqsou1_3_800
-
-fileresult = pathout+'\\'+nom_csv+'.csv'
-file3 = open(fileresult, "w")
-cwr = csv.writer(file3, delimiter=';', lineterminator='\n') # delimiter \t est possible aussi; delimiter=';' permet une ouverture spontanée par Excel
-for i in range(len(nom_fichier)): 
-    cwr.writerow(nom_fichier[i])
-file3.close()
