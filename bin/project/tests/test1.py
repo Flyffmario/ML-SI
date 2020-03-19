@@ -18,6 +18,8 @@ if (root_folder not in sys.path):
     sys.path.append(root_folder)
 
 import mlsi.entryprocessing
+import mlsi.msi
 
-#data = mlsi.entryprocessing.importCompactExtractEntries()
-#mlsi.learning.learn(autres,clones)
+#mlsi.entryprocessing.normalizeDatabaseModel1()
+#mlsi.entryprocessing.concatenateEntries(func_used=mlsi.msi.MSI3,liss=6)
+#mlsi.entryprocessing.browserSortBy()

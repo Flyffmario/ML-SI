@@ -6,180 +6,28 @@ Created on Tue Mar 10 14:24:54 2020
 """
 
 import os
-import numpy as np
 
 from tkinter import Tk
 from tkinter.filedialog import askopenfilename, askdirectory
 
 #%%
 
-
-'''
-les fonctions importées ici sont purement à but de test pour comprendre le fonctionnement
-'''
-
-def __tof2mass(tof, ML1, ML2, ML3):
-    A = ML3
-    B = np.sqrt(1E12/ML1)
-    C = ML2 - tof
-    if (A == 0): return ((C * C)/(B * B))
-    else: return (((-B + np.sqrt((B * B) - (4 * A * C))) / (2 * A))**2)
-
-def __lire_spectre_Bruker(folder):
-    #folder=list_dir_to1SLin('C:\\Users\\...\\MonDossierDeSpectres_a_Analyser') 
-    #folder=list_dir_to1SLin('my_path_panel')
+def __extractEntryCharacteristics(src,dim):
     
-    #Lit une entrée
-    
-    files=os.listdir(folder)
-    spectrelu=[]
-    if 'acqu' not in files or 'fid' not in files:
-#        DATE=''
-        data=[[0]*2000,[0]*2000]
-        spectrelu.append(data)
-    else:
-        parameters = open(folder  + "/acqu").read()
-        if parameters =='' or np.fromfile(folder  +'/fid', dtype = np.int32).size==0:
-#        DATE=''
-            data=[[0]*2000,[0]*2000]
-            spectrelu.append(data)
-        else:
-            parse_var = parameters.find('$ML1= ')
-            ML1 = float(parameters[parse_var + 6:parse_var + 20].split(' ')[0])
-            parse_var = parameters.find('$ML2= ')
-            ML2 = float(parameters[parse_var + 6:parse_var + 20].split(' ')[0])
-            parse_var = parameters.find('$ML3= ')
-            ML3 = float(parameters[parse_var + 6:parse_var + 20].split(' ')[0])
-            parse_var = parameters.find('$DELAY= ')
-            DELAY = int(parameters[parse_var + 8:parse_var + 22].split(' ')[0])
-            parse_var = parameters.find('$DW= ')
-            DW = float(parameters[parse_var + 5:parse_var + 19].split(' ')[0])
-            parse_var = parameters.find('$TD= ')
-            TD = int(parameters[parse_var + 5:parse_var + 19].split(' ')[0])
-            parse_var = parameters.find('$AQ_DATE= ')
-            #        DATE = parameters[parse_var + 11:parse_var + 21].split(' ')[0]
-            #Traduction TOF à Mass
-            raw_mz_scale = __tof2mass(DELAY + np.arange(TD) * DW, ML1, ML2, ML3)
-            raw_mz_scale2= raw_mz_scale.tolist()
-            #Intensité de chaque pic
-            raw_intensite = np.zeros((len(files), TD), dtype = np.int32)
-            raw_intensite = np.fromfile(folder  +'/fid', dtype = np.int32)
-            raw_intensite2=raw_intensite.tolist() 
-            
-            data = [raw_mz_scale2,raw_intensite2]
-            spectrelu.append(data)
-            #Format : [ [ raw_mz_scale2,raw_intensite2 ] ]
+    if (dim==2):
+        id_spectre=next(src) #id_spectre
+        len_x=next(src) #len X
+        x_string=next(src) #X
+        len_y=next(src) #len Y
+        y_string=next(src) #Y
+        return [id_spectre,len_x,x_string,len_y,y_string]
+    elif (dim==1):
+        id_spectre=next(src) #id_spectre
+        len_x=next(src) #len X
+        x_string=next(src) #X
+        return [id_spectre,len_x,x_string]
 
-        return spectrelu, folder #, DATE
-
-# In[15]:
-
-def MSI2(folder,lissage=1):
-    
-    '''
-    Applique la méthode MSI2, qui normalise le spectre en entrée suivant une correction de la ligne de base.
-    
-    La ligne de base est définie comme un bruit de basse fréquence, se traduisant comme un relief très peu pentu sur une grande partie du spectre.
-    
-    folder est le chemin vers la racine des fichiers à extraire. La fin du chemin se termine avec "1SLin" normalement.
-    lissage définit le niveau de lissage appliqué par l'algorithme.
-    '''
-    
-    #La majeure partie de cette fonction a été récupérée à partir d'une autre fonction.
-    
-    spectre=__lire_spectre_Bruker(folder)
-    
-    #Importation des Données
-    contenu=spectre[0][0]
-    folder=spectre[1]
-    liste_masses=contenu[0]
-    liste_intensites=contenu[1]
-    
-    intens1=[]
-    intens2=[]
-    
-    #étape de lissage
-    i = 0
-    while  i < (len(liste_intensites) - lissage+1):
-        j = 0
-        somme = 0
-        while j < lissage:
-            somme = somme + liste_intensites[i + j]
-            j += 1
-        #print("i =", i, "somme =", somme)
-        intens1.append(somme)
-        intens2.append(somme)
-        #print("i =", i, "intens2[i] =", intens2[i])
-        i += 1
-    #print(intens1)
-    #print(intens2)
-        
-    #travail sur la ligne de base
-    i = 0
-    j = 0
-    b = 100 #je pense qu'il ne peut pas être différent de c mais c'est à creuser
-    c = 100 #taille du dy dans dx/dy
-    d = 0
-    mini = []
-    minimum = 0
-    while d < ((len(intens1)/c) - 1):
-        minimum = intens1[c * d]
-        i = c * d
-        #1.1.0
-        while i <(c * d) + b:
-            intens1[i] = minimum
-            if intens1[i + 1] > intens1[i] and i <(c * d) + b - 1 :
-                minimum = intens1[i]
-            elif intens1[i + 1] > intens1[i] and i ==(c * d) + b - 1 :
-                minimum = intens1[i]
-                k = c * d
-                while k <(c * d) + b:
-                    mini.append(minimum)
-                    k += 1
-            elif intens1[i + 1] <= intens1[i] and i < (c * d) + b - 1 :
-                minimum = intens1[i + 1]
-            elif intens1[i + 1] <= intens1[i] and i == (c * d) + b - 1 :
-                minimum = intens1[i + 1]
-                k = c * d
-                while k <(c * d) + b:
-                    mini.append(minimum)
-                    k += 1
-            i += 1
-        d += 1
-
-    ligne_base = []
-    i = 0
-    while i < (len(mini) - 150):
-        n = 0
-        while n < 100:
-            ligne_base.append( ((mini[i + 50]*(100 - n)) + (mini[i + 150] * n))/100 )
-            n += 1
-        i += 100
-
-    int_corrigee = []
-    i = 0
-    while i < len(mini) - 150:
-        int_corrigee.append( intens2[i] - ligne_base[i] )
-        """if int_corrigee[i] >= 500:
-            print("***", "i =", i, "int_corrigee[i] =", int_corrigee[i])"""
-        i += 1
-
-    #print(int_corrigee)
-    
-    #Exportation
-    return [liste_masses,int_corrigee]
-
-#%%
-
-def __extractEntryCharacteristics(src):
-    id_spectre=next(src) #id_spectre
-    len_x=next(src) #len X
-    x_string=next(src) #X
-    len_y=next(src) #len Y
-    y_string=next(src) #Y
-    return [id_spectre,len_x,x_string,len_y,y_string]
-
-def __writeEntry(fichier,sample_name,specter_name,x,y):
+def __writeEntry(fichier,sample_name,specter_name,x,y=None):
     
     '''
     Ecrit une entrée dans le fichier mentionné.
@@ -191,20 +39,50 @@ def __writeEntry(fichier,sample_name,specter_name,x,y):
     x,y sont respectivement l'abscisse et l'ordonnée du spectre à écrire.
     '''
     
-    fichier.write(sample_name+'\n')
-    fichier.write(specter_name+'\n')
-    fichier.write("Len X = "+str(len(x))+'\n')
-    for i in range(len(x)-1):
-        fichier.write(str(x[i])+',')
-    fichier.write(str(x[len(x)-1]))
-    fichier.write('\n')
-    fichier.write("Len Y = "+str(len(y))+'\n')
-    for i in range(len(y)-1):
-        fichier.write(str(y[i])+',')
-    fichier.write(str(y[len(y)-1]))
-    fichier.write('\n')
+    if y!=None:
+        #Spectre en deux dimensions
+        fichier.write(sample_name+'\n')
+        fichier.write(specter_name+'\n')
+        fichier.write("Len X = "+str(len(x))+'\n')
+        for i in range(len(x)-1):
+            fichier.write(str(x[i])+',')
+        fichier.write(str(x[len(x)-1]))
+        fichier.write('\n')
+        fichier.write("Len Y = "+str(len(y))+'\n')
+        for i in range(len(y)-1):
+            fichier.write(str(y[i])+',')
+        fichier.write(str(y[len(y)-1]))
+        fichier.write('\n')
+    else:
+        #Spectre en une dimension
+        fichier.write(sample_name+'\n')
+        fichier.write(specter_name+'\n')
+        fichier.write("Len X = "+str(len(x))+'\n')
+        for i in range(len(x)-1):
+            fichier.write(str(x[i])+',')
+        fichier.write(str(x[len(x)-1]))
+        fichier.write('\n')
+        
+def getDimensionnality(fichier):
+    src=open(fichier,'r')
+    next(src)
+    next(src)
+    next(src)
+    next(src)
+    comp=next(src)
+    dim=0
+    if(len(comp.split('_'))>1):
+        #Fichier 1D, on est à l'entrée suivante
+        dim=1
+    else:
+        #Fichier 2D, on est pas encore à l'entrée suivante
+        dim=2
+    src.close()
+    return dim
 
-def concatenateEntries(func_used=MSI2,liss=1):
+#%%
+
+def concatenateEntries(func_used,liss=1):
     
     '''
     Parcours une arborescence de fichiers et concatène les spectres trouvés en un fichier.
@@ -257,25 +135,23 @@ def concatenateEntries(func_used=MSI2,liss=1):
                     #Sélectionner à partir de la fin
                     #[-1] renvoie oneSLine, [-2] renvoie one, ainsi de suite...
                     
-                    data_on_path=directory[0].split('\\')
+                    data_on_path=directory[0].split('/')
                     sample_name=data_on_path[-4]
                     specter_name=data_on_path[-3]
-                    
-                    #un nom d'entrée s'organise ainsi
-                    #J3 calibration 24102019_autres_20191024-1011017172_1214
-                    #J5 calibration 26102019_clones masques_20191026-1011017215_I7
-                    #ou ainsi
-                    #BACT_191210_1011001152_1214
                     
                     #on peut spliter sur les _ et prendre l'index 1, vérifier l'orthographe et écrire accordément
                     #[jour_calibration,cat,date_et_numero,souche]=sample_name.split('_')
                     #ou
                     #[type_de_machine,date,numero,souche]=sample_name.split('_')
                     
-                    [x,y]=func_used(directory[0],lissage=liss)
-                    x=x[:len(y)]
+                    spectre=func_used(directory[0],lissage=liss)
                     
-                    __writeEntry(current_file,sample_name,specter_name,x,y)
+                    if len(spectre)==2:    
+                        spectre[0]=spectre[0][:len(spectre[1])]
+                        __writeEntry(current_file,sample_name,specter_name,x=spectre[0],y=spectre[1])
+                    elif len(spectre)==1:
+                        __writeEntry(current_file,sample_name,specter_name,x=spectre[0])
+                        
                 else:
                     pass
             else:
@@ -292,7 +168,7 @@ def browserSortBy():
     Tk().withdraw() # we don't want a full GUI, so keep the root window from appearing
     print("[INFO] A folder explorer window has been created. Please look for the folder where all the entries you want to concatene are.")
     fichier = askopenfilename() # show an "Open" dialog box and return the path to the selected folder
-    mode=int(input("Specify mode used (0:type / 1:age / 2:calibration / 3:plate / 4:nom_echantillon)"))
+    mode=int(input("Specify mode used (0:type / 1:age / 2:calibration / 3:plate / 4:name_stem / 5:machine / 6:method)"))
     __sortBy(fichier,mode)
            
 def __sortBy(fichier,mode=0):
@@ -304,24 +180,29 @@ def __sortBy(fichier,mode=0):
     
     fichier est le chemin vers le fichier à trier.
     mode définit la méthode de tri utilisée :
-        - 0 trie suivant si l'entrée est clone ou non.
+        - 0 trie suivant si la qualification de la culture
         - 1 trie suivant l'âge de la culture.
         - 2 trie suivant le jour où la calibration a été réalisée.
-        - 3 trie suivant le numéro de plaque.
+        - 3 trie suivant l'identifiant de la plaque
+        - 4 trie suivant l'identifiant de la souche
+        - 5 trie suivant la machine utilisée
+        - 6 trie suivant la méthode utilisée
     '''
+    
+    dim=getDimensionnality(fichier)
     
     with open(fichier,'r') as src:
         file_dictionnary=dict()
         for line in src:
             name=line #nom de l'échantillon
-            [jour_et_calibration,cat,date_et_numero,nom_echantillon]=line.split('_')
+            [mach,J,calibration,cat,num_plaque,id_ech,mthde]=line.split('_')
             
             #Dans la nouvelle base de données, un nom d'entrée sera organisée ainsi :
             #BACT_J3_191210_clone_1011001152_1214_E2
             #<machine>_<age_de_culture>_<date_de_calibration>_<plaque>_<id_de_l_echantillon>_<methode_d_extraction>
             #[mach,age,calib,num_plaque,id_ech,mthde]=line.split('_')
             
-            characteristics=[name]+__extractEntryCharacteristics(src)
+            characteristics=[name]+__extractEntryCharacteristics(src,dim)
             sorting_var=None
             
             if (mode==0):
@@ -329,40 +210,37 @@ def __sortBy(fichier,mode=0):
                 sorting_var=cat
             elif (mode==1):
                 #Tri suivant J_culture
-                [J,temp,calibration]=jour_et_calibration.split(' ')
                 sorting_var=J
             elif (mode==2):
                 #Tri suivant J_calibration
-                [J,temp,calibration]=jour_et_calibration.split(' ')
                 sorting_var=calibration
             elif (mode==3):
                 #Tri suivant la plaque
-                [calibration2,numero]=date_et_numero.split('-')
-                sorting_var=numero
+                sorting_var=num_plaque
             elif (mode==4):
                 #Tri suivant la nom_echantillon sur la plaque
-                nom_echantillon=nom_echantillon.split('\n')[0]
-                sorting_var=nom_echantillon
+                sorting_var=id_ech
             elif (mode==5):
                 #Tri suivant la machine utilisée
-                pass
+                sorting_var=mach
+            elif (mode==6):
+                #Tri suivant la méthode utilisée
+                sorting_var=mthde.split('\n')[0]
             else:
                 #Aucun tri existant correspondant
                 raise("[ERROR] Invalid mode specified.")
             
             if (sorting_var in file_dictionnary):
                 #catX existe déjà
-                file_dictionnary[sorting_var].write(characteristics[0])
-                file_dictionnary[sorting_var].write(characteristics[1])
-                file_dictionnary[sorting_var].write(characteristics[2])
-                file_dictionnary[sorting_var].write(characteristics[3])
-                file_dictionnary[sorting_var].write(characteristics[4])
-                file_dictionnary[sorting_var].write(characteristics[5])
+                for i in characteristics:             
+                    file_dictionnary[sorting_var].write(i)
             else:
                 #catX n'existe pas encore
                 file_dictionnary[sorting_var]=open(fichier.split('.txt')[0]+"_"+sorting_var+"_Sorted.txt",'w')
         for i in file_dictionnary.keys():
             file_dictionnary[i].close()
+
+#%%
 
 def normalizeDatabaseModel1():
     
@@ -443,8 +321,16 @@ def __compactEntries(fichier):
         abscisse
         taille de l'ordonnée
         ordonnée
+    Ou ainsi :
+        nom de l'espèce
+        référence du spectre
+        taille de l'abscisse
+        abscisse
+        
     Et crée un fichier .txt avec le même nom, la mention "_compacted" rajoutée au nom, avec des entrées organisées ainsi :
         abscisse,ordonnée
+    Ou ainsi :
+        abscisse
     Le but est de créer un fichier aisément exploitable par un algorithme de learning.
     Compacter deux axes sur un seul n'affecte pas la performance ni ne biaise l'analyse.
     
@@ -457,17 +343,31 @@ def __compactEntries(fichier):
         os.remove(fichier.split('.txt')[0]+"_compacted.txt")
     except:
         pass
+    
+    #Test de formattage du fichier, si c'est 1D ou 2D
+    
+    dim=getDimensionnality(fichier)
+    print(dim)
+    
+    #Extraction
     with open(fichier,'r') as src, open(fichier.split('.txt')[0]+"_compacted.txt",'w') as trgt:
         #on doit passer les trois premières lignes
         for line in src:
             #nom de l'échantillon en entier
-            next(src) #identification du spectre
-            next(src) #len X
-            x_string=src.readline() #X
-            next(src) #len Y
-            y_string=src.readline() #Y
             
-            z_string=x_string.split('\n')[0]+','+y_string
+            if(dim==2):
+                next(src) #identification du spectre
+                next(src) #len X
+                x_string=src.readline() #X
+                next(src) #len Y
+                y_string=src.readline() #Y
+                
+                z_string=x_string.split('\n')[0]+','+y_string
+            elif(dim==1):
+                next(src) #identification du spectre
+                next(src) #len X
+                x_string=src.readline() #X
+                z_string=x_string
             
             trgt.write(z_string)
 
