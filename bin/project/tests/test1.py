@@ -21,5 +21,5 @@ import mlsi.entryprocessing
 import mlsi.msi
 
 #mlsi.entryprocessing.normalizeDatabaseModel1()
-#mlsi.entryprocessing.concatenateEntries(func_used=mlsi.msi.MSI3,liss=6)
+mlsi.entryprocessing.concatenateEntries(func_used=mlsi.msi.MSI4,liss=6)
 #mlsi.entryprocessing.browserSortBy()

@@ -89,10 +89,119 @@ def __build_raw_spectrum(folder):
     # #     if raw_mz_scale[i]>1998 and raw_mz_scale[i]<2002:
     # #         print(i, raw_mz_scale[i],raw_intensite [i])
     # return raw_mz_scale, raw_intensite, DATE
+    
+def __MSI4_build_raw_spectrum(folder,lissage,ijk,mindelta):#mindelta = 20 puis 1000
+    
+    files=os.listdir(folder)
+    spectrelu=[]
+    parameters = open(folder  + "/acqu").read()
+    if parameters =='' or np.fromfile(folder  +'/fid', dtype = np.int32).size==0:
+        motifs = [[0,0,0,1]]
+        return motifs
+        
+    else:
+        parse_var = parameters.find('$ML1= ')
+        ML1 = float(parameters[parse_var + 6:parse_var + 20].split(' ')[0])
+        parse_var = parameters.find('$ML2= ')
+        ML2 = float(parameters[parse_var + 6:parse_var + 20].split(' ')[0])
+        parse_var = parameters.find('$ML3= ')
+        ML3 = float(parameters[parse_var + 6:parse_var + 20].split(' ')[0])
+        parse_var = parameters.find('$DELAY= ')
+        DELAY = int(parameters[parse_var + 8:parse_var + 22].split(' ')[0])
+        parse_var = parameters.find('$DW= ')
+        DW = float(parameters[parse_var + 5:parse_var + 19].split(' ')[0])
+        parse_var = parameters.find('$TD= ')
+        TD = int(parameters[parse_var + 5:parse_var + 19].split(' ')[0])
+        raw_mz_scale = __tof2mass(DELAY + np.arange(TD) * DW, ML1, ML2, ML3)
+        raw_mz_scale2= raw_mz_scale.tolist()
+        raw_intensite = np.zeros((len(files), TD), dtype = np.int32)
+        raw_intensite = np.fromfile(folder  +'/fid', dtype = np.int32)
+        raw_intensite2=raw_intensite.tolist() 
+        spectrelu = [raw_mz_scale2,raw_intensite2]
+        
+    spectre_liss = []
+    liss = lissage # 300 en mz transformé
+    a = len(spectrelu[1])#intens
+#    print("a",a)
+    
+    for i in range(a-liss):
+
+
+        if spectrelu[0][i]>=2000:
+            j = 0
+            somme = 0
+            while j < liss:
+                somme = somme + spectrelu[1][i+j]
+                j += 1
+            spectre_liss.append([spectrelu[0][i],int(somme/liss), i])
+        else:
+            pass
+
+    relief = []
+    epsilon=0#ligne de base
+    i = 0
+    pente = False
+    while i < len(spectre_liss)- 1:
+        
+        if spectre_liss[i+1][1] > spectre_liss[i][1] +epsilon :#
+            pente = True
+        elif spectre_liss[i+1][1] +epsilon < spectre_liss[i][1]:
+            pente = False
+                      
+        relief.append([spectre_liss[i+1][0], spectre_liss[i+1][1], pente])  #mz int     
+        i += 1#
+    
+    changement = []
+    i = 0
+    while i < len(relief) - 1:
+        if relief[i][2] is True and relief[i+1][2] is False:
+            changement.append(relief[i])
+        elif relief[i][2] is False and relief[i+1][2] is True:
+            changement.append(relief[i])
+        i += 1#mz int pente
+    pic_list = []
+    i = 1
+    while i < len(changement) - 1:
+        intensite = changement[i][1]-(0.5*(changement[i-1][1] + changement[i+1][1]))
+        if changement[i][2] is True and intensite > mindelta :
+            pic_list.append([changement[i][0], intensite])
+        i += 1
+
+    pic_list = sorted(pic_list, key=lambda pic_list:pic_list[1],reverse = True)#tri par intensite
+
+    i = 0
+    while i < len(pic_list):
+        pic_list[i][0] = int(10000*sqrt(pic_list[i][0]))
+        pic_list[i][1] = i/(i+10)#intens
+        i += 1
+
+    pic_list = pic_list[0: 50]#50 plus fortes intensites
+
+    motifs = []
+    i = 2
+    lenght = len(pic_list)
+    while i < lenght:
+        j = 1#1
+        while j < lenght - i:
+            k = 1 #1
+            while k < lenght - i - j:
+                if pic_list[i + j + k][1] + pic_list[i + j][1] + pic_list[i][1] < ijk :
+                    a = pic_list[i][0]
+                    b = pic_list[i + j][0] - pic_list[i][0]
+                    c = pic_list[i + j + k][0] - pic_list[i + j][0]
+                    #N'ai pas encore demandé pourquoi le 1 à la fin d'un triplet
+                    #Est-ce nécessaire ? Pour le moment l'ai retiré.
+                    #motifs.append([a, b, c, 1])
+                    motifs.append([a,b,c])
+                k += 1    
+            j += 1
+        i += 1
+    
+    return motifs 
 
 #%%
         
-def MSI2(folder,lissage=1):
+def MSI2(folder,lissage=6):
     
     '''
     Applique la méthode MSI2, qui normalise le spectre en entrée suivant une correction de la ligne de base.
@@ -279,3 +388,8 @@ def MSI3(folder,lissage=6):
 
 #%%
 
+def MSI4(folder,lissage=6,ijk=5,mindelta=20):
+    
+    motif=__MSI4_build_raw_spectrum(folder,lissage=lissage,ijk=ijk,mindelta=mindelta)
+    motifs=[inner for outer in motif for inner in outer]
+    return [motifs]

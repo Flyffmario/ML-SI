@@ -139,17 +139,14 @@ def concatenateEntries(func_used,liss=1):
                     sample_name=data_on_path[-4]
                     specter_name=data_on_path[-3]
                     
-                    #on peut spliter sur les _ et prendre l'index 1, vérifier l'orthographe et écrire accordément
-                    #[jour_calibration,cat,date_et_numero,souche]=sample_name.split('_')
-                    #ou
-                    #[type_de_machine,date,numero,souche]=sample_name.split('_')
-                    
                     spectre=func_used(directory[0],lissage=liss)
                     
-                    if len(spectre)==2:    
+                    if len(spectre)==2:
+                        #Two elements, [[x],[y]]
                         spectre[0]=spectre[0][:len(spectre[1])]
                         __writeEntry(current_file,sample_name,specter_name,x=spectre[0],y=spectre[1])
                     elif len(spectre)==1:
+                        #One element, [[x]]
                         __writeEntry(current_file,sample_name,specter_name,x=spectre[0])
                         
                 else:
