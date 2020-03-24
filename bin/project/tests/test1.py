@@ -19,7 +19,6 @@ if (root_folder not in sys.path):
 
 import mlsi.entryprocessing
 import mlsi.msi
+import mlsi.learning
 
-#mlsi.entryprocessing.normalizeDatabaseModel1()
-mlsi.entryprocessing.concatenateEntries(func_used=mlsi.msi.MSI4,liss=6)
-#mlsi.entryprocessing.browserSortBy()
+mlsi.entryprocessing.browserNormalizeDatabase()
