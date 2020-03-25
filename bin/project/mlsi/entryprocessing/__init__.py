@@ -7,6 +7,13 @@ Created on Tue Mar 10 14:24:54 2020
 
 import os
 
+root_folder=".../"
+import sys
+if (root_folder not in sys.path):
+    sys.path.append(root_folder)
+
+import mlsi.msi
+
 from tkinter import Tk
 from tkinter.filedialog import askopenfilename, askdirectory
 
@@ -252,11 +259,17 @@ def normalizeDatabase(folder,add_info_type_1=[['191024','MYCO','E2']],add_info_t
                         #model1
                         if (" calibration " in entry_name):
                             #Si ça passe pas, ça veut dire que c'est le mauvais nom de fichier
+                            #J3 calibration 24102019_autres_20191024-1011017172_1214
+                            
                             
                             name=entry_name
-                            compacted_name=name.split(' calibration ')[0]+'_'+name.split(' calibration ')[1].split('_',1)[1]
-                            compacted_name=compacted_name.replace('-','_')
+                            compacted_name='_'.join(name.split(' calibration '))
+                            compacted_name='_'.join(compacted_name.split('-',1))
+                            compacted_name=compacted_name.split('_')
+                            del compacted_name[1]
+                            compacted_name='_'.join(compacted_name)
                             contents=compacted_name.split('_')
+                            
                             contents[1],contents[2]=contents[2],contents[1]
                             
                             for i in add_info_type_1:
@@ -286,7 +299,8 @@ def normalizeDatabase(folder,add_info_type_1=[['191024','MYCO','E2']],add_info_t
                                     Jour=i[2]
                                     methode=i[3]
                             final_name='_'.join([contents[0],Jour,'20'+contents[1],category,contents[2],contents[3],methode])
-                            os.rename(directory[0],folder+'/'+final_name)
+                            os.rename(directory[0],folder+'/'+category+'/'+final_name)
+    print("[INFO] Database at "+folder+" Normalized.")
 
 #%%
 
@@ -312,7 +326,7 @@ def createConcatenatedEntries(folder,func_used,liss=6):
     '''
 
     
-    filename=folder+"/Spectres_Concatenes_"+folder.split('/')[-1]+".txt"
+    filename=folder+"/Spectres_Concatenes_"+folder.split('/')[-1]+'_'+func_used.__name__+".txt"
     
     try:
         os.remove(filename)
@@ -360,6 +374,128 @@ def createConcatenatedEntries(folder,func_used,liss=6):
                     pass
             else:
                 pass
+
+#%%
+
+def __lookForUnreferencedAndMissing(fichier):
+
+    path=fichier.split('/')
+    master_folder='/'.join(path[:len(path)-1])
+    
+    dim=__getDimensionnality(fichier)
+    
+    with open(fichier,'r') as src:
+        #Le fichier concaténé.
+        
+       
+        #Une entrée est unique, set est plus efficace que list et évites les doublons.
+        #Étant un ensemble, les opérateurs d'intersection sont plus rapides
+       
+        referenced_files=set()
+        for line in src:
+            referenced_files.add(line.split('\n')[0])
+            
+            if dim==1:
+                for i in range(3): next(src)
+            elif dim==2:
+                for i in range(5): next(src)
+                
+        #Maintenant on doit voir ce qui manque ou a été rajouté.
+                
+        existing_files=set()
+        existing_subdirectories=set()
+        for directory in os.walk(master_folder):
+            #Finalement, c'est le dossier le plus à la racine du fichier où on regarde qui nous intéresse
+            name_of_folder_being_looked=directory[0].split(master_folder)[1][1:]
+            #Prends tous les fichiers à la racine folder, leur retire folder
+            components_of_path=name_of_folder_being_looked.split('/')
+            
+            if('1' in components_of_path or '1SLin' in components_of_path or 'pdata' in components_of_path):
+                pass
+            else:
+                #Au mieux on est dans le fichier
+                #Au pire, on est ou dans des fichiers au dessus de la racine, ou au niveau du dir du spectre
+                
+                if ('1' in directory[1]):
+                    pass
+                else:
+                    #Il n'y a pas de subdir nommé '1', autrement dit nous ne sommes pas dans un dossier de spectre
+                    #On ne peut être qu'à la racine où sont toutes les entrées ou plus haut.
+                    
+                    if len(name_of_folder_being_looked.split('/'))>=2:
+                        category=name_of_folder_being_looked.split('/')[-2]
+                        entry_name=name_of_folder_being_looked.split('/')[-1]
+                        
+                        existing_subdirectories.add(category)
+                    else:
+                        entry_name=name_of_folder_being_looked
+                        
+                    existing_files.add(entry_name)
+        
+        existing_files=existing_files-existing_subdirectories
+        unreferenced_files=existing_files-referenced_files
+        unreferenced_files.remove('')
+        
+        missing_files=referenced_files-existing_files
+        
+        if (len(missing_files)==0 and len(unreferenced_files)==0):
+            print("[INFO] No missing or unreferenced files.")
+        elif (len(missing_files)!=0):
+            print("[WARN] Missing files present in concatenated file. Be wary if you intend to delete the current file.")
+            print("[WARN] The names of the missing files are the following :")
+            for i in missing_files:
+                print(i)
+        elif (len(unreferenced_files)!=0):
+            print("[WARN] Unreferenced files present in folder. Please reference them or be aware that those files will not be processed by the library.")
+            print("[WARN] The names of the unreferenced files are the following :")
+            for i in unreferenced_files:
+                print(i)
+        
+        return unreferenced_files,missing_files
+    
+def browserUpdateConcatenatedentries():
+    updateConcatenatedEntries(__browserFile())
+
+def updateConcatenatedEntries(fichier,liss=6):
+    
+    path=fichier.split('/')
+    master_folder='/'.join(path[:len(path)-1])
+    name_fichier=path[-1]
+    name_of_func_used=name_fichier.split('_')[-1].split('.txt')[0]
+    
+    normalizeDatabase(master_folder)
+    unreferenced,missing=__lookForUnreferencedAndMissing(fichier)
+
+    print("[INFO] Updating "+name_fichier+" with the unreferenced files found...")
+
+    #L'idée est maintenant d'ajouter des données à la suite du fichier concaténé déjà existant
+    with open(fichier,'a') as current_file:
+        #'a' est important, on ne réecrit pas en entier le fichier !
+        for root, dirs, files in os.walk(master_folder):
+            if(dirs!=[]):
+                if(dirs[0]=='pdata'):
+                    #BACT_J3_20191210_autres_1011001152_1269_E2/0_C6/1/1SLin,['pdata'],['acqu', 'acqus', 'fid', 'sptype']
+                    data_on_path=root.split('/')
+                    sample_name=data_on_path[-4]
+                    if (sample_name in unreferenced):
+                        
+                        specter_name=data_on_path[-3]
+                        
+                        if (name_of_func_used=='MSI2'):
+                            spectre=mlsi.msi.MSI2(root,lissage=liss)
+                        elif (name_of_func_used=='MSI3'):
+                            spectre=mlsi.msi.MSI3(root,lissage=liss)
+                        elif (name_of_func_used=='MSI4'):
+                            spectre=mlsi.msi.MSI4(root,lissage=liss)
+                            
+                        if len(spectre)==2:
+                            #Two elements, [[x],[y]]
+                            spectre[0]=spectre[0][:len(spectre[1])]
+                            __writeEntry(current_file,sample_name,specter_name,x=spectre[0],y=spectre[1])
+                        elif len(spectre)==1:
+                            #One element, [[x]]
+                            __writeEntry(current_file,sample_name,specter_name,x=spectre[0])
+    print("[INFO] Update done.")
 
 #%%
     

@@ -21,4 +21,6 @@ import mlsi.entryprocessing
 import mlsi.msi
 import mlsi.learning
 
-mlsi.entryprocessing.browserNormalizeDatabase()
+#mlsi.entryprocessing.browserNormalizeDatabase()
+#mlsi.entryprocessing.browserCreateconcatenatedEntries(mlsi.msi.MSI2)
+#mlsi.entryprocessing.browserUpdateConcatenatedentries()
