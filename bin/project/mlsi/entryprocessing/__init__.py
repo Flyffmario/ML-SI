@@ -447,6 +447,8 @@ def updateConcatenatedEntries(fichier,liss=6):
     '''
     Updates the concatenated file with the latest entries in the database.
     The newest entries are normalized first, then they are added to the already existing file.
+    
+    Name of the file is then modified to match current date and time.
     '''
     
     
@@ -489,7 +491,13 @@ def updateConcatenatedEntries(fichier,liss=6):
                                 #One element, [[x]]
                                 __writeEntry(current_file,sample_name,specter_name,x=spectre[0])
         
-        print("[INFO] Updated "+name_fichier)
+        components_of_name=name_fichier.split('_')
+        components_of_name[-3]=strftime("%Y%m%d")
+        components_of_name[-2]=strftime("%H%M%S")
+        
+        os.rename(fichier,master_folder+'/'+'_'.join(components_of_name))
+        
+        print("[INFO] Updated "+name_fichier+", renamed to ",'_'.join(components_of_name))
 
 #%%
 
@@ -497,22 +505,44 @@ def updateConcatenatedEntries(fichier,liss=6):
         #Si la base n'est pas normalisée, elle l'est.
         #Si un fichier concatané traité avec la fonction recherchée n'existe pas, il est créé
         #Si le fichier concatené traité avec la fonction recherchée n'est pas à jour, il est mis à jour
-'''
+
 def browserUpdateDatabase(func_used):
     updateDatabase(__browserDirectory(),func_used)
   
 def updateDatabase(folder,func_used,add_info_type_1=[['191024','MYCO','E2']],add_info_type_2=[['191210','BACT','J3','E2']],lissage=6):
     
-    normalizeDatabase(folder,add_info_type_1=[['191024','MYCO','E2']],add_info_type_2=[['191210','BACT','J3','E2']])
+    normalizeDatabase(folder,add_info_type_1=add_info_type_1,add_info_type_2=add_info_type_2)
 
     #À modifier, le format de fichier n'est plus le même.'
-    fichier=folder+"/Spectres_Concatenes_"+folder.split('/')[-1]+'_'+func_used.__name__+".txt"
+    #par défaut, essaies d'updater le concatenated entry le plus récent
+    
+    #On veut juste l'arborescence directe des fichiers à la racine
+    f = []
+    for (dirpath, dirnames, filenames) in os.walk(folder):
+        f.extend(filenames)
+        break
+    max_date=0
+    max_time=0
+    for i in filenames:
+        if i.startswith("Spectres_Concatenes"):
+            if (not i.endswith("compacted.txt")) and (not i.endswith("Sorted.txt") and i.endswith(func_used.__name__+".txt")):
+                #On est sûr d'avoir des fichiers concaténés bruts sans aucun traitement préalable et avec la bonne fonction utilisée
+                #Maintenant il peut y avoir plusieurs fichiers préalables, on veut le plus récent
+                if (max_date==0 and max_time==0):
+                    max_date,max_time=int(i.split('_')[-3]),int(i.split('_')[-2])
+                else:
+                    current_date,current_time=int(i.split('_')[-3]),int(i.split('_')[-2])
+                    if (current_date>max_date):
+                        max_date=current_date
+                    if (current_time>max_time):
+                        max_time=current_time
+    fichier=folder+'/Spectres_Concatenes_'+folder.split('/')[-1]+'_'+str(max_date)+'_'+str(max_time)+'_'+func_used.__name__+".txt"
     
     try:
         updateConcatenatedEntries(fichier,liss=lissage)
     except:
         createConcatenatedEntries(folder,func_used,liss=lissage)
-'''
+
         
 
 #%%
@@ -623,11 +653,11 @@ def extractCompactedEntries(fichier,limit=10):
             i+=1
         return L
                      
-def browserCompactAndExtractEntries():
-    data=compactAndExtractEntries(__browserFile())
+def browserCompactAndExtractCompactedEntries(limit=10):
+    data=compactAndExtractCompactedEntries(__browserFile(),limit=limit)
     return data
 
-def compactAndExtractEntries(filename):
+def compactAndExtractCompactedEntries(filename,limit=10):
     '''
     Import an entry database in the form of a txt, create a compacted version if it isn't existing in the root folder of the imported file, and extracts its contents.
     
@@ -647,7 +677,7 @@ def compactAndExtractEntries(filename):
         #Si la version compactée n'existait pas, elle existe maintenant.
         print("[INFO] Extracting "+filename.split('/')[-1].split('.txt')[0]+"_compacted.txt"+"...")
         print(filename.split('.txt')[0]+'_compacted.txt')
-        data=extractCompactedEntries(filename.split('.txt')[0]+'_compacted.txt',limit=20)
+        data=extractCompactedEntries(filename.split('.txt')[0]+'_compacted.txt',limit=10)
     except:
         print("[ERROR] Not a Valid path or Not a .txt file or Entries not found/not valid in the mentioned file.")
         data=None
