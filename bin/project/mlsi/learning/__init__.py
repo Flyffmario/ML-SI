@@ -5,6 +5,13 @@ Created on Tue Mar 10 15:48:51 2020
 @author: Stagiaire
 """
 
+root_folder=".../"
+import sys
+if (root_folder not in sys.path):
+    sys.path.append(root_folder)
+    
+import mlsi.entryprocessing
+
 import matplotlib.pyplot as plt
 
 from sklearn.linear_model import LogisticRegression
@@ -21,19 +28,36 @@ def learn(donnees_autres,donnees_clones,proportion_entrainement=80):
     #- Une liste qui contient tous les paramètres à analyser (donc le contenu des txt)
     #- Une liste qui qualifie si un échantillon correspondant à la liste précédente est un clone ou un autre
     #   - on définira 0 comme autres et 1 comme clone
-
+  
+    L_autres=donnees_autres
+    L_clones=donnees_clones
+    
+    offset=len(L_autres[0])-len(L_clones[0])
+    if (offset>=0):
+        #autres plus grand que clones
+        L_autres=mlsi.entryprocessing.updateSpecterLength(L_autres,dim=2,offset=offset)
+    else:
+        #clones plus grand que autres
+        offset*=-1
+        L_clones=mlsi.entryprocessing.updateSpecterLength(L_clones,dim=2,offset=offset)
+        
 
     #Extraire d'abord les données
-    autres_entrainement=donnees_autres[:ratio_entrainement]
-    clones_entrainement=donnees_clones[:ratio_entrainement]
+    autres_entrainement=L_autres[:ratio_entrainement]
+    clones_entrainement=L_clones[:ratio_entrainement]
     entrainement=autres_entrainement+clones_entrainement
     verite_entrainement=[0]*len(autres_entrainement)+[1]*len(clones_entrainement)
     
-    autres_test=donnees_autres[ratio_entrainement:]
-    clones_test=donnees_clones[ratio_entrainement:]
+    autres_test=L_autres[ratio_entrainement:]
+    clones_test=L_clones[ratio_entrainement:]
     test=autres_test+clones_test
     verite_test=[0]*len(autres_test)+[1]*len(clones_test)
     
+    print(len(entrainement))
+    
+    for i in range(len(entrainement)):
+        print(len(entrainement[i]))
+
 
     clf = LogisticRegression(random_state=0,max_iter=1000).fit(entrainement, verite_entrainement)
     #print(clf.predict(test))

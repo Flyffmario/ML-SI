@@ -153,33 +153,6 @@ def __compactEntries(fichier):
                 z_string=x_string
             
             trgt.write(z_string)
-
-def __extractCompactedEntries(fichier,limit=10):
-    
-    '''
-    Fonction qui extrait d'un txt avec la mention _compacted un certain nombre d'entrées.
-    Il n'y a pas de randomisation, la fonction prendra les X premières entrées (ici X=limit).
-    
-    Renvoie une liste de taille égale à la variable limit, qui contient les listes des spectres compactés extraits de taille correspondant à ce qui a été extrait.
-    
-    fichier est le chemin vers le fichier.
-    limit est un int, et définit le nombre d'entrées que l'on veut importer. 10 par défaut. Attention de ne pas préciser une taille trop grande pour des ordinateurs lents.
-    '''
-    
-    with open(fichier,'r') as src:
-        L=[]
-        i=0
-        for line in src:
-            if(i>=limit):
-                #Faut mettre une limite sinon c'est la merde, ça prend trop de temps à calculer...
-                break
-            donnee_brute=line.split('\n')
-            #https://stackoverflow.com/questions/1574678/efficient-way-to-convert-strings-from-split-function-to-ints-in-python
-            #map est légèrement plus rapide et moins consommateur de CPU
-            donnee_organisee=list(map(float,donnee_brute[0].split(',')))
-            L.append(donnee_organisee)
-            i+=1
-        return L
     
 def __browserDirectory():
     Tk().withdraw() # we don't want a full GUI, so keep the root window from appearing
@@ -619,9 +592,40 @@ def sortBy(fichier,mode=0):
             file_dictionnary[i].close()
 
 #%%
-                            
+       
+def browserExtractCompactedEntries(limit=10):
+    return extractCompactedEntries(__browserFile(),limit=limit)
+
+def extractCompactedEntries(fichier,limit=10):
+    
+    '''
+    Fonction qui extrait d'un txt avec la mention _compacted un certain nombre d'entrées.
+    Il n'y a pas de randomisation, la fonction prendra les X premières entrées (ici X=limit).
+    
+    Renvoie une liste de taille égale à la variable limit, qui contient les listes des spectres compactés extraits de taille correspondant à ce qui a été extrait.
+    
+    fichier est le chemin vers le fichier.
+    limit est un int, et définit le nombre d'entrées que l'on veut importer. 10 par défaut. Attention de ne pas préciser une taille trop grande pour des ordinateurs lents.
+    '''
+    
+    with open(fichier,'r') as src:
+        L=[]
+        i=0
+        for line in src:
+            if(i>=limit):
+                #Faut mettre une limite sinon c'est la merde, ça prend trop de temps à calculer...
+                break
+            donnee_brute=line.split('\n')
+            #https://stackoverflow.com/questions/1574678/efficient-way-to-convert-strings-from-split-function-to-ints-in-python
+            #map est légèrement plus rapide et moins consommateur de CPU
+            donnee_organisee=list(map(float,donnee_brute[0].split(',')))
+            L.append(donnee_organisee)
+            i+=1
+        return L
+                     
 def browserCompactAndExtractEntries():
-    compactAndExtractEntries(__browserFile())
+    data=compactAndExtractEntries(__browserFile())
+    return data
 
 def compactAndExtractEntries(filename):
     '''
@@ -642,8 +646,36 @@ def compactAndExtractEntries(filename):
              
         #Si la version compactée n'existait pas, elle existe maintenant.
         print("[INFO] Extracting "+filename.split('/')[-1].split('.txt')[0]+"_compacted.txt"+"...")
-        data=__extractCompactedEntries(filename.split('.txt')[0]+'_compacted.txt',limit=20)
-        return data
+        print(filename.split('.txt')[0]+'_compacted.txt')
+        data=extractCompactedEntries(filename.split('.txt')[0]+'_compacted.txt',limit=20)
     except:
         print("[ERROR] Not a Valid path or Not a .txt file or Entries not found/not valid in the mentioned file.")
+        data=None
+    return data
+
+#%%
+    
+def updateSpecterLength(L,dim=2,offset=0):
+    #[[],[],[],[]]
+
+    minima_L=len(L[0])
+    for i in range(1,len(L)):
+        if minima_L>len(L[i]):
+            minima_L=len(L[i])
+    #la taille minimum est trouvée  
+            
+    new_L=[]
+        
+    for i in L:
+        if dim==2:
+            x=i[:(len(i)//2)]
+            y=i[(len(i)//2):]
+            new_x=x[:minima_L//2-offset//2]
+            new_y=y[:minima_L//2-offset//2]
+            new_L.append(new_x+new_y)
+        elif dim==1:
+            new_L.append(i[:minima_L-offset])
+    return new_L
+        
+        
     
