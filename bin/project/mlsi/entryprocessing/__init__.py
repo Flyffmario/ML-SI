@@ -22,6 +22,12 @@ from time import strftime
 
 def __extractEntryCharacteristics(src,dim):
     
+    '''
+    Read an entry from an entries file. To use in a "for line in file" structure.
+    
+    Returns in a list the characteristics of an entry. Its length depends on the file 2D or 1D structure. (5 for the first, 3 for the latter)
+    '''
+    
     if (dim==2):
         id_spectre=next(src) #id_spectre
         len_x=next(src) #len X
@@ -38,13 +44,12 @@ def __extractEntryCharacteristics(src,dim):
 def __writeEntry(fichier,sample_name,specter_name,x,y=None):
     
     '''
-    Ecrit une entrée dans le fichier mentionné.
-    Utilisé principalement pour générer une base de données sous forme .txt.
+    Writes an entry in an entries file.
     
-    fichier est le chemin vers le fichier texte où écrire.
-    sample_name est la référence de l'échantillon.
-    specter_name est la référence du spectre.
-    x,y sont respectivement l'abscisse et l'ordonnée du spectre à écrire.
+    fichier is the file path.
+    sample_name is the sample reference.
+    specter_name is the specter reference.
+    x,y are respectively the axes of the specter.
     '''
     
     if y!=None:
@@ -73,7 +78,7 @@ def __writeEntry(fichier,sample_name,specter_name,x,y=None):
         
 def __getDimensionnality(fichier):
     '''
-    Returns the dimensionnality of a concatenated file.
+    Returns the dimensionnality of an entries file.
     
     If the file is formatted to compute 2D-specters, it will return 2.
     Else, it will return 1.
@@ -97,27 +102,26 @@ def __getDimensionnality(fichier):
 def __compactEntries(fichier):
     
     '''
-    Prends une base de données organisée dans un .txt ainsi :
+    Take a entries file organized like this :
         nom de l'espèce
         référence du spectre
         taille de l'abscisse
         abscisse
         taille de l'ordonnée
         ordonnée
-    Ou ainsi :
+    Or like this :
         nom de l'espèce
         référence du spectre
         taille de l'abscisse
         abscisse
         
-    Et crée un fichier .txt avec le même nom, la mention "_compacted" rajoutée au nom, avec des entrées organisées ainsi :
+    and compacts it, with the mention "_compacted" added at the end, entries organized like this :
         abscisse,ordonnée
-    Ou ainsi :
+    or like this :
         abscisse
-    Le but est de créer un fichier aisément exploitable par un algorithme de learning.
-    Compacter deux axes sur un seul n'affecte pas la performance ni ne biaise l'analyse.
+    The aim is to create a txt file easily exploitable by a learning algorithm.
     
-    fichier est le chemin vers le fichier.
+    fichier is the path to the file.
     '''
     
     #On prépare le fichier qui sera utilisé pour l'apprentissage
@@ -167,6 +171,12 @@ def __browserFile():
     return fichier
     
 def __lookForUnreferencedAndMissing(fichier):
+    
+    '''
+    Lists the specters already processed in the file. Walk in the parent folder of the file to see if there are missing or unreferenced specters.
+    
+    Returns two lists : unreferenced and missing. Note that those lists list entries names and not entries paths.
+    '''
 
     path=fichier.split('/')
     name_fichier=path[-1]
@@ -257,25 +267,25 @@ def browserNormalizeDatabase(add_info_type_1=[['191024','MYCO','E2']],add_info_t
 def normalizeDatabase(folder,add_info_type_1=[['191024','MYCO','E2']],add_info_type_2=[['191210','BACT','J3','E2']]):
     
     '''
-    Transformes un nom de fichier en un autre :
+    Transforms every file name in the tree folder "folder" :
         
-                BACT_191210_1011001152_1214 ou J3 calibration 24102019_autres_20191024-1011017172_1214
+                J3 calibration 24102019_autres_20191024-1011017172_1214 (type 1) || BACT_191210_1011001152_1214 (type 2)
                                                           V
                                         BACT_J3_20191210_clone_1011001152_1214_E2
                                         
-    Normalisant ainsi la base de données.
-    Toutes les entrées se retrouveront à la racine spécifiée.
+    Normalizing the database.
     
-    Un minima de set de données doit être fourni :
+    
+    folder is the directory path.
+    
+    add_info_type_1 has this format :
+        [[date,machine,method],[date,machine,method],...]
+        A type 1 entry corresponding to the date will be annotated with corresponding machine and method used
+    add_info_type_2 has this format :
+        [[date,machine,age,method],[date,machine,age,method],...]
+        A type 2 entry corresponding to the date and machine used will be annotated with corresponding stem's age and method used
         
-        add_info_type_1 a cette forme :
-            [[date,machine,methode],[date,machine,methode],...]
-            Une entrée répondant à la date correspondante sera annotée des champs machine et methode correspondants
-        add_info_type_2 a cette forme :
-            [[date,machine,age,methode],[date,machine,age,methode],...]
-            Une entrée répondant à la date et à la machine correspondante sera annotée des champs age et methode correspondants
-            
-    Ces informations sont nécessaires pour normaliser la base de données, car les formats en vigueur pour le moment ne les ont pas.
+    Those infos are crucial to normalize the database, otherwise the normalization will not function well.
 
     '''
 
@@ -372,19 +382,20 @@ def browserCreateconcatenatedEntries(func_used,lissage=6):
 def createConcatenatedEntries(folder,func_used,liss=6):
     
     '''
-    Parcours une arborescence de fichiers et concatène les spectres trouvés en un fichier.
-    Génère un .txt avec toutes les entrées trouvées dans les dossiers enfants.
-    Utilisé pour extraire les entrées d'une arborescence de base de données.
+    Walks in the folder tree starting from "folder" path directory.
+    Concatenate all entries found in a txt file having this structure :
+        "Spectres_Concatenes_<parent folder name>_<date of update>_<time of update>_<mlsi.msi function used>.txt"
     
-    Exemple sur l'arborescence Flavus :
-        Flavus
-            Flavus_Manip1
-            Flavus_Manip2
-        Supposons que l'on ne souhaite que les données de Flavus_Manip1, on fera pointer l'endroit où tous les spectres sont sur :
+    Exemple on the folder tree Flavus :
+        Flavus/
+            Flavus/Flavus_Manip1
+            Flavus/Flavus_Manip2
+        Let's say we only want the entries in Flavus/Flavus_Manip1 with mlsi.msi.MSI2, we'll give to the parameter "folder" the path leading to :
             Flavus/Flavus_Manip1/
-        Le .txt contenant tous les spectres sera généré avec le nom "Spectres_Concatenes_Flavus_Manip1.txt" dans le dossier Flavus/Flavus_Manip1/
+        The txt file containing all entries from Flavus/Flavus_Manip1 will be generated with the name "Spectres_Concatenes_Flavus_Manip1_<date>_<time>_MSI2.txt" dans :
+            Flavus/Flavus_Manip1/
     
-    func_used est une fonction qui détermine le type de traitement utilisé pour extraire les spectres de la base. Elle doit impérativement être une fonction MSI de mlsi.msi
+    func_used is a mlsi.msi function.
     '''
 
     
@@ -445,10 +456,10 @@ def browserUpdateConcatenatedentries():
 def updateConcatenatedEntries(fichier,liss=6):
     
     '''
-    Updates the concatenated file with the latest entries in the database.
-    The newest entries are normalized first, then they are added to the already existing file.
+    Updates the concatenated file with the latest entries in the database present in the parent folder of the file being opened.
+    The newest unreferenced entries are normalized first, then they are added to the already existing file. The name of the file is then modified to match current date and time.
     
-    Name of the file is then modified to match current date and time.
+    Returns nothing.
     '''
     
     
@@ -501,16 +512,34 @@ def updateConcatenatedEntries(fichier,liss=6):
 
 #%%
 
-#updateDatabase
-        #Si la base n'est pas normalisée, elle l'est.
-        #Si un fichier concatané traité avec la fonction recherchée n'existe pas, il est créé
-        #Si le fichier concatené traité avec la fonction recherchée n'est pas à jour, il est mis à jour
-
 def browserUpdateDatabase(func_used):
     updateDatabase(__browserDirectory(),func_used)
   
 def updateDatabase(folder,func_used,add_info_type_1=[['191024','MYCO','E2']],add_info_type_2=[['191210','BACT','J3','E2']],lissage=6):
+    '''
+    Updates the whole database to match the format we're looking for.
+    It does multiple things, in that order :
+        Normalize the Database.
+        Look for the latest file that contains the concatenated entries and matches the MSI function used.
+            If it exists, updates it.
+                If there are unreferenced entries, adds those entries to the file, and updates its date and time of latest update.
+                If there are missing entries, warn the user.
+            If not, creates a file that contains all the concatenated entries.
     
+    Returns nothing.
+    
+    folder is the path to the root of the database, where all the entries are organized and found.
+    func_used is the mlsi.msi function used.
+    
+    add_info_type_1 has this format :
+        [[date,machine,method],[date,machine,method],...]
+        A type 1 entry corresponding to the date will be annotated with corresponding machine and method used
+    add_info_type_2 has this format :
+        [[date,machine,age,method],[date,machine,age,method],...]
+        A type 2 entry corresponding to the date and machine used will be annotated with corresponding stem's age and method used
+        
+    lissage is the amount of smoothing used in the mlsi.msi function.
+    '''
     normalizeDatabase(folder,add_info_type_1=add_info_type_1,add_info_type_2=add_info_type_2)
 
     #À modifier, le format de fichier n'est plus le même.'
@@ -555,19 +584,19 @@ def browserSortBy():
 def sortBy(fichier,mode=0):
     
     '''
-    Trie automatiquement un fichier contenant des entrées suivant ce qui est demandé d'être trié.
-    
-    Crée autant de fichiers qu'il y a d'occurrences différentes trouvées. Les fichiers auront dans le nom une mention supplémentaire nommant le type de tri effectué.
-    
-    fichier est le chemin vers le fichier à trier.
-    mode définit la méthode de tri utilisée :
-        - 0 trie suivant la qualification de la culture
-        - 1 trie suivant l'âge de la culture.
-        - 2 trie suivant le jour où la calibration a été réalisée.
-        - 3 trie suivant l'identifiant de la plaque
-        - 4 trie suivant l'identifiant de la souche
-        - 5 trie suivant la machine utilisée
-        - 6 trie suivant la méthode utilisée
+    Automatically sorts an entries file by a characteristic defined by "mode".
+
+    Returns nothing, but creates as much txt files as there are different unique characteristics at the parent folder of the read file.
+
+    fichier is the path to the file.
+    mode define the characteristic being sorted :
+        - 0 is the qualification of the stem (clonal, unidentified...)
+        - 1 is its age
+        - 2 is its calibration date
+        - 3 is its plate's id
+        - 4 is its stem's id
+        - 5 is the machine used
+        - 6 is the method used
     '''
     
     dim=__getDimensionnality(fichier)
@@ -629,13 +658,13 @@ def browserExtractCompactedEntries(limit=10):
 def extractCompactedEntries(fichier,limit=10):
     
     '''
-    Fonction qui extrait d'un txt avec la mention _compacted un certain nombre d'entrées.
-    Il n'y a pas de randomisation, la fonction prendra les X premières entrées (ici X=limit).
+    Extracts a set number of entries from a txt file with the mention "_compacted" at the end.
+    There are no randomisation : the X first entries will be extracted, X being equal to the parameter "limit".
     
-    Renvoie une liste de taille égale à la variable limit, qui contient les listes des spectres compactés extraits de taille correspondant à ce qui a été extrait.
+    Returns a list of length equal to "limit", of specters (which are lists too).
     
-    fichier est le chemin vers le fichier.
-    limit est un int, et définit le nombre d'entrées que l'on veut importer. 10 par défaut. Attention de ne pas préciser une taille trop grande pour des ordinateurs lents.
+    fichier is the path to the file.
+    limit is an int, and defines the set number of entries imported. BEWARE that extracting a lot of entries can cost the computer in processing time.
     '''
     
     with open(fichier,'r') as src:
@@ -659,9 +688,12 @@ def browserCompactAndExtractCompactedEntries(limit=10):
 
 def compactAndExtractCompactedEntries(filename,limit=10):
     '''
-    Import an entry database in the form of a txt, create a compacted version if it isn't existing in the root folder of the imported file, and extracts its contents.
+    Compacts the file specified and extracts its content in a list. If a compacted version already exists, it ignores compaction and straight up extracts the contents of the compacted file in a list.
     
-    No parameters needed, a file explorer will open in order to let the user choose the file to import.
+    Returns a list of length equal to "limit", of specters (which are lists too).
+    
+    filename is the file path to the uncompacted version.
+    limit is an int, and defines the set number of entries imported. BEWARE that extracting a lot of entries can cost the computer in processing time.
     '''
     
     try:
@@ -682,6 +714,7 @@ def compactAndExtractCompactedEntries(filename,limit=10):
         print("[ERROR] Not a Valid path or Not a .txt file or Entries not found/not valid in the mentioned file.")
         data=None
     return data
+
 
 #%%
     

@@ -18,6 +18,47 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import confusion_matrix
 from sklearn.metrics import roc_curve, auc
 
+#%%
+
+class Study:
+    '''
+    Study est une paillasse où seront expérimentés les différents algos de learning.
+    
+    data=[[descripteurs],[verité]]
+    algo
+    
+    Dans sa structure, il prend :
+        - Des données d'entrée : [[descripteurs],[classes]] qu'on peut modifier, ajouter, supprimer... bref on y a accès facilement
+        - Un algo de learning : à voir comment on organise, mais idem, on définit ce qu'on veut et fait ce qu'on veut..
+    
+    Et en retour :
+        - On peut entraîner l'algo prévu
+        - On peut visualiser les résultats de l'algo, sa structure, ses propriétés, son fonctionnement
+onstruc        - On peut configurer à volonté l'algo
+        
+        - On peut tester l'étude sur des données non triées
+        - On peut vérifier son efficacité, ses propriétés et résultats
+        
+        - On peut exporter l'étude
+    '''
+    
+    
+    def __init__(self,data,algo):
+        #ctr
+        self.data=data
+        self.algo=algo
+        
+        self.timeTakenToTrain=0
+        self.timeTakenToPredict=0
+        
+    def updateDataLength(self):
+        '''
+        Fonction à transférer
+        '''
+        pass
+
+#%%
+
 def learn(donnees_autres,donnees_clones,proportion_entrainement=80):
     #RegressionLogistique !
     #Ratio 80/20 Entraînement/Test
