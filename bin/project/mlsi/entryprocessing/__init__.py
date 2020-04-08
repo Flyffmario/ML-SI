@@ -16,6 +16,7 @@ import mlsi.msi
 
 from tkinter import Tk
 from tkinter.filedialog import askopenfilename, askdirectory
+
 from time import strftime
 
 #%%
@@ -98,65 +99,6 @@ def __getDimensionnality(fichier):
         dim=2
     src.close()
     return dim
-
-def __compactEntries(fichier):
-    
-    '''
-    Take a entries file organized like this :
-        nom de l'espèce
-        référence du spectre
-        taille de l'abscisse
-        abscisse
-        taille de l'ordonnée
-        ordonnée
-    Or like this :
-        nom de l'espèce
-        référence du spectre
-        taille de l'abscisse
-        abscisse
-        
-    and compacts it, with the mention "_compacted" added at the end, entries organized like this :
-        abscisse,ordonnée
-    or like this :
-        abscisse
-    The aim is to create a txt file easily exploitable by a learning algorithm.
-    
-    fichier is the path to the file.
-    '''
-    
-    #On prépare le fichier qui sera utilisé pour l'apprentissage
-    
-    try:
-        os.remove(fichier.split('.txt')[0]+"_compacted.txt")
-    except:
-        pass
-    
-    #Test de formattage du fichier, si c'est 1D ou 2D
-    
-    dim=__getDimensionnality(fichier)
-    print(dim)
-    
-    #Extraction
-    with open(fichier,'r') as src, open(fichier.split('.txt')[0]+"_compacted.txt",'w') as trgt:
-        #on doit passer les trois premières lignes
-        for line in src:
-            #nom de l'échantillon en entier
-            
-            if(dim==2):
-                next(src) #identification du spectre
-                next(src) #len X
-                x_string=src.readline() #X
-                next(src) #len Y
-                y_string=src.readline() #Y
-                
-                z_string=x_string.split('\n')[0]+','+y_string
-            elif(dim==1):
-                next(src) #identification du spectre
-                next(src) #len X
-                x_string=src.readline() #X
-                z_string=x_string
-            
-            trgt.write(z_string)
     
 def __browserDirectory():
     Tk().withdraw() # we don't want a full GUI, so keep the root window from appearing
@@ -614,28 +556,36 @@ def sortBy(fichier,mode=0):
             
             characteristics=[name]+__extractEntryCharacteristics(src,dim)
             sorting_var=None
+            feature=None
             
             if (mode==0):
                 #Tri suivant Clone ou non
                 sorting_var=cat
+                feature="category"
             elif (mode==1):
                 #Tri suivant J_culture
                 sorting_var=J
+                feature="age"
             elif (mode==2):
                 #Tri suivant J_calibration
                 sorting_var=calibration
+                feature="calibration"
             elif (mode==3):
                 #Tri suivant la plaque
                 sorting_var=num_plaque
+                feature="plate"
             elif (mode==4):
                 #Tri suivant la nom_echantillon sur la plaque
                 sorting_var=id_ech
+                feature="stem"
             elif (mode==5):
                 #Tri suivant la machine utilisée
                 sorting_var=mach
+                feature="machine"
             elif (mode==6):
                 #Tri suivant la méthode utilisée
                 sorting_var=mthde.split('\n')[0]
+                feature="method"
             else:
                 #Aucun tri existant correspondant
                 raise("[ERROR] Invalid mode specified.")
@@ -646,12 +596,76 @@ def sortBy(fichier,mode=0):
                     file_dictionnary[sorting_var].write(i)
             else:
                 #catX n'existe pas encore
-                file_dictionnary[sorting_var]=open(fichier.split('.txt')[0]+"_"+sorting_var+"_Sorted.txt",'w')
+                file_dictionnary[sorting_var]=open(fichier.split('.txt')[0]+"_"+sorting_var+"_"+feature+"Sorted.txt",'w')
         for i in file_dictionnary.keys():
             file_dictionnary[i].close()
 
+
+
 #%%
-       
+
+def browserCompactEntries():
+    compactEntries(__browserFile())
+
+def compactEntries(fichier):
+    
+    '''
+    Take a entries file organized like this :
+        nom de l'espèce
+        référence du spectre
+        taille de l'abscisse
+        abscisse
+        taille de l'ordonnée
+        ordonnée
+    Or like this :
+        nom de l'espèce
+        référence du spectre
+        taille de l'abscisse
+        abscisse
+        
+    and compacts it, with the mention "_compacted" added at the end, entries organized like this :
+        abscisse,ordonnée
+    or like this :
+        abscisse
+    The aim is to create a txt file easily exploitable by a learning algorithm.
+    
+    fichier is the path to the file.
+    '''
+    
+    #On prépare le fichier qui sera utilisé pour l'apprentissage
+    
+    try:
+        os.remove(fichier.split('.txt')[0]+"_compacted.txt")
+    except:
+        pass
+    
+    #Test de formattage du fichier, si c'est 1D ou 2D
+    
+    dim=__getDimensionnality(fichier)
+    print(dim)
+    
+    #Extraction
+    with open(fichier,'r') as src, open(fichier.split('.txt')[0]+"_compacted.txt",'w') as trgt:
+        #on doit passer les trois premières lignes
+        for line in src:
+            #nom de l'échantillon en entier
+            
+            if(dim==2):
+                next(src) #identification du spectre
+                next(src) #len X
+                x_string=src.readline() #X
+                next(src) #len Y
+                y_string=src.readline() #Y
+                
+                z_string=x_string.split('\n')[0]+','+y_string
+            elif(dim==1):
+                next(src) #identification du spectre
+                next(src) #len X
+                x_string=src.readline() #X
+                z_string=x_string
+            
+            trgt.write(z_string)
+
 def browserExtractCompactedEntries(limit=10):
     return extractCompactedEntries(__browserFile(),limit=limit)
 
@@ -681,7 +695,9 @@ def extractCompactedEntries(fichier,limit=10):
             L.append(donnee_organisee)
             i+=1
         return L
-                     
+
+#%%
+        
 def browserCompactAndExtractCompactedEntries(limit=10):
     data=compactAndExtractCompactedEntries(__browserFile(),limit=limit)
     return data
@@ -703,7 +719,7 @@ def compactAndExtractCompactedEntries(filename,limit=10):
             print("[INFO] Processed version of given file already existing in the current path. Skipping...")
         except:
              print("[INFO] Processing "+filename.split('/')[-1]+"...")
-             __compactEntries(filename)
+             compactEntries(filename)
              print("[INFO] Process done !")
              
         #Si la version compactée n'existait pas, elle existe maintenant.
@@ -715,10 +731,50 @@ def compactAndExtractCompactedEntries(filename,limit=10):
         data=None
     return data
 
+#%%
+            
+def browserExtractFeatureRelatedData(feature,limit=10):
+    return extractFeatureRelatedData(__browserDirectory(),feature,limit=limit)
+
+def extractFeatureRelatedData(folder,feature,limit=10):
+    '''
+    Extracts all sorted compacted data in the folder root path, with specified feature in last Sorted field in its name.
+    
+    Returns X, y, and a dictionnary that link y to its original label.
+    '''
+    referenced_class=dict()
+    classnumber=0
+    
+    data=[]
+    verite=[]
+    
+    for (dirpath, dirnames, filenames) in os.walk(folder):
+        for i in filenames:
+            if(i.endswith("compacted.txt") and i.startswith("Spectres_Concatenes")):
+                #Le dernier Sorted compte
+                #Attention, ça ne compte pas s'il y a plusieurs Sorted, il prends juste le dernier
+                feature_extracted=i.split('_')[-2].split('Sorted')[0]
+                if (feature_extracted==feature):
+                    #Le fichier récupéré est un fichier trié comme on le souhaite
+                    #On l'extrait
+                    current_path=dirpath+'/'+i
+                    current_data=extractCompactedEntries(current_path,limit=limit)
+                    
+                    feature_category=i.split('_')[-3]
+                    referenced_class[classnumber]=feature_category
+                    
+                    for j in range(len(current_data)):
+                        data.append(current_data[j])
+                        verite.append(classnumber)
+                    
+                    classnumber+=1
+        break
+    
+    return data,verite,referenced_class
 
 #%%
     
-def updateSpecterLength(L,dim=2,offset=0):
+def cropSpecterToMinimumLength(L,dim=2,offset=0):
     #[[],[],[],[]]
 
     minima_L=len(L[0])

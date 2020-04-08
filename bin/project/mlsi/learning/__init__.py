@@ -14,6 +14,8 @@ import mlsi.entryprocessing
 
 import matplotlib.pyplot as plt
 
+import sklearn
+
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import confusion_matrix
 from sklearn.metrics import roc_curve, auc
@@ -40,109 +42,77 @@ onstruc        - On peut configurer à volonté l'algo
         - On peut vérifier son efficacité, ses propriétés et résultats
         
         - On peut exporter l'étude
+        
+    Seulement, c'est multiclasse (pré-définitions) ou multilabel (propriétés) ?
+    MultiLabel semble être plus approprié : on doit pouvoir définir toutes les propriétés d'une souche
+    Genre : J3, E3, clonal ou pas
+    
+    Multioutput-multiclass : on cherche à obtenir des props uniques parmis plusieurs ensembles.
+    https://stackoverflow.com/questions/46770088/multioutput-classifier-learning-5-target-variables
     '''
     
     
-    def __init__(self,data,algo):
+    def __init__(self):
         #ctr
-        self.data=data
-        self.algo=algo
         
-        self.timeTakenToTrain=0
-        self.timeTakenToPredict=0
+        #Essentiel
+        self.data=None
+        self.veritas=None
+        self.dict_veritas=None
         
-    def updateDataLength(self):
-        '''
-        Fonction à transférer
-        '''
-        pass
+        self.algorithm=None
+        
+        self.X_train=None
+        self.Y_train=None
+        self.X_test=None
+        self.Y_test=None
+    
+    def testAccuracy(self):
+        scores = sklearn.model_selection.cross_val_score(self.algorithm, self.data, self.veritas, cv=5)
+        print("Accuracy: %0.2f (+/- %0.2f)" % (scores.mean(), scores.std() * 2))
+        return scores.mean(), scores.std()*2
+    
+    def train(self,size_of_test=0.2):
+        self.X_train, self.X_test, self.Y_train, self.Y_test = sklearn.model_selection.train_test_split(self.data, self.veritas, test_size=size_of_test, random_state=0)
+        self.algorithm.fit(self.X_train,self.Y_train)
+    
+    def confusionMatrix(self):
+        tn,fp,fn,tp=confusion_matrix(self.Y_test,self.algorithm.predict(self.X_test)).ravel()
+        sensibilite=tp/(tp+fn)
+        specificite=tn/(tn+fp)
+        
+        print("Vraies souches : {} ; Fausses souches : {} ; Faux Clones : {} ; Vrais Clones : {}".format(tn,fn,fp,tp))
+        print("Sensibilité = {} ; Specificité = {}".format(sensibilite,specificite))
+    
+    def rocCurve(self):
+        
+        test_score=self.algorithm.predict_proba(self.X_test)
+        
+        fpr = dict()
+        tpr = dict()
+        roc_auc = dict()
+        for i in range(2):
+            fpr[i], tpr[i], _ = roc_curve(self.Y_test,test_score[:,1])
+            roc_auc[i] = auc(fpr[i], tpr[i])
+        
+        # Compute micro-average ROC curve and ROC area
+        fpr["micro"], tpr["micro"], _ = roc_curve(self.Y_test, test_score[:,1])
+        roc_auc["micro"] = auc(fpr["micro"], tpr["micro"])
+        
+        plt.figure()
+        lw = 2
+        plt.plot(fpr[1], tpr[1], color='darkorange',
+                 lw=lw, label='ROC curve (area = %0.2f)' % roc_auc[1])
+        plt.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--')
+        plt.xlim([0.0, 1.0])
+        plt.ylim([0.0, 1.05])
+        plt.xlabel('False Positive Rate')
+        plt.ylabel('True Positive Rate')
+        plt.title('Receiver operating characteristic example')
+        plt.legend(loc="lower right")
+        plt.show()
+        
+        
 
 #%%
 
-def learn(donnees_autres,donnees_clones,proportion_entrainement=80):
-    #RegressionLogistique !
-    #Ratio 80/20 Entraînement/Test
-
-    ratio_entrainement=int((proportion_entrainement/100)*len(donnees_autres))
-    
-    #On doit définir deux choses :
-    #- Une liste qui contient tous les paramètres à analyser (donc le contenu des txt)
-    #- Une liste qui qualifie si un échantillon correspondant à la liste précédente est un clone ou un autre
-    #   - on définira 0 comme autres et 1 comme clone
-  
-    L_autres=donnees_autres
-    L_clones=donnees_clones
-    
-    offset=len(L_autres[0])-len(L_clones[0])
-    if (offset>=0):
-        #autres plus grand que clones
-        L_autres=mlsi.entryprocessing.updateSpecterLength(L_autres,dim=2,offset=offset)
-    else:
-        #clones plus grand que autres
-        offset*=-1
-        L_clones=mlsi.entryprocessing.updateSpecterLength(L_clones,dim=2,offset=offset)
-        
-
-    #Extraire d'abord les données
-    autres_entrainement=L_autres[:ratio_entrainement]
-    clones_entrainement=L_clones[:ratio_entrainement]
-    entrainement=autres_entrainement+clones_entrainement
-    verite_entrainement=[0]*len(autres_entrainement)+[1]*len(clones_entrainement)
-    
-    autres_test=L_autres[ratio_entrainement:]
-    clones_test=L_clones[ratio_entrainement:]
-    test=autres_test+clones_test
-    verite_test=[0]*len(autres_test)+[1]*len(clones_test)
-    
-    print(len(entrainement))
-    
-    for i in range(len(entrainement)):
-        print(len(entrainement[i]))
-
-
-    clf = LogisticRegression(random_state=0,max_iter=1000).fit(entrainement, verite_entrainement)
-    #print(clf.predict(test))
-    #print()
-    test_score=clf.predict_proba(test)
-    print(test_score[:,1])
-    tn,fp,fn,tp=confusion_matrix(verite_test,clf.predict(test)).ravel()
-    sensibilite=tp/(tp+fn)
-    specificite=tn/(tn+fp)
-    
-    '''
-    plt.figure()
-    df_cm = [[tp,fn],[fp,tn]]
-    # plt.figure(figsize=(10,7))
-    legende={'Info Réelle':('Clone','Normal'),'Info calculée':('Clone','Normal')}
-    sn.set(font_scale=1.4) # for label size
-    sn.heatmap(df_cm, annot=True, annot_kws={"size": 16},index='Info Réelle',columns='Info') # font size
-    plt.show()
-    '''
-    
-    #COURBE ROC
-    fpr = dict()
-    tpr = dict()
-    roc_auc = dict()
-    for i in range(2):
-        fpr[i], tpr[i], _ = roc_curve(verite_test,test_score[:,1])
-        roc_auc[i] = auc(fpr[i], tpr[i])
-    
-    # Compute micro-average ROC curve and ROC area
-    fpr["micro"], tpr["micro"], _ = roc_curve(verite_test, test_score[:,1])
-    roc_auc["micro"] = auc(fpr["micro"], tpr["micro"])
-    
-    plt.figure()
-    lw = 2
-    plt.plot(fpr[1], tpr[1], color='darkorange',
-             lw=lw, label='ROC curve (area = %0.2f)' % roc_auc[1])
-    plt.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--')
-    plt.xlim([0.0, 1.0])
-    plt.ylim([0.0, 1.05])
-    plt.xlabel('False Positive Rate')
-    plt.ylabel('True Positive Rate')
-    plt.title('Receiver operating characteristic example')
-    plt.legend(loc="lower right")
-    plt.show()
-    
-    print("Vraies souches : {} ; Fausses souches : {} ; Faux Clones : {} ; Vrais Clones : {}".format(tn,fn,fp,tp))
-    print("Sensibilité = {} ; Specificité = {}".format(sensibilite,specificite))
