@@ -34,10 +34,11 @@ mlsi.entryprocessing.browserUpdateDatabase(mlsi.msi.MSI2)
 
 #On compacte les deux fichiers créés
 #Penser à faire une fonction qui compacte tous les fichiers Sorted
-#mlsi.entryprocessing.browserCompactEntries()
-#mlsi.entryprocessing.browserCompactEntries()
+#mlsi.entryprocessing.browserCompactFeatureRelatedData("stem",limit=5)
 
-data,verite,dict_label=mlsi.entryprocessing.browserExtractFeatureRelatedData('category')
+data,verite,dict_label=mlsi.entryprocessing.browserExtractFeatureRelatedData('stem')
+data=mlsi.entryprocessing.castToFloat32(data)
+print("Cropping...")
 new_data=mlsi.entryprocessing.cropSpecterToMinimumLength(data)
 
 #Étudions la capacité de la nouvelle classe
@@ -47,12 +48,18 @@ study.data=new_data
 study.veritas=verite
 study.dict_veritas=dict_label
 
-study.algorithm=sklearn.svm.LinearSVC(random_state=0, tol=1e-5)
+study.algorithm=sklearn.linear_model.LogisticRegression(random_state=0,multi_class="multinomial")
 
-study.testAccuracy()
+#print("Calculating Accuracy...")
+#study.testAccuracy()
+#print("Done")
+print("Training...")
 study.train()
-study.confusionMatrix()
+#print("Confusing...")
+#study.confusionMatrix()
 #study.rocCurve()
+
+study.algorithm.predict_proba(study.X_test)
 
 
 

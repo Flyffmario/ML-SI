@@ -9,8 +9,6 @@ root_folder=".../"
 import sys
 if (root_folder not in sys.path):
     sys.path.append(root_folder)
-    
-import mlsi.entryprocessing
 
 import matplotlib.pyplot as plt
 
@@ -68,7 +66,7 @@ onstruc        - On peut configurer à volonté l'algo
         self.Y_test=None
     
     def testAccuracy(self):
-        scores = sklearn.model_selection.cross_val_score(self.algorithm, self.data, self.veritas, cv=5)
+        scores = sklearn.model_selection.cross_val_score(self.algorithm, self.data, self.veritas, cv=2)
         print("Accuracy: %0.2f (+/- %0.2f)" % (scores.mean(), scores.std() * 2))
         return scores.mean(), scores.std()*2
     

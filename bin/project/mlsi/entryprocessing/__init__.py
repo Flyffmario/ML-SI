@@ -19,6 +19,8 @@ from tkinter.filedialog import askopenfilename, askdirectory
 
 from time import strftime
 
+import numpy as np
+
 #%%
 
 def __extractEntryCharacteristics(src,dim):
@@ -279,15 +281,20 @@ def normalizeDatabase(folder,add_info_type_1=[['191024','MYCO','E2']],add_info_t
                             
                             contents[1],contents[2]=contents[2],contents[1]
                             
+                            found_case=False
                             for i in add_info_type_1:
                                 if(contents[1][2:]==i[0]):
                                     #Identifiant : Date
                                     machine=i[1]
                                     methode=i[2]
-                                    contents.insert(0,str(machine))
-                                    contents.insert(len(contents),str(methode))
+                                    found_case=True
+                                    
+                            if found_case==False:
+                                #Occurrence non trouvée
+                                machine='MYCO'
+                                methode='E2'
                             
-                            final_name='_'.join(contents)
+                            final_name='_'.join([machine]+contents+[methode])
 
                             os.rename(directory[0],folder+'/'+final_name)
         
@@ -547,6 +554,7 @@ def sortBy(fichier,mode=0):
         file_dictionnary=dict()
         for line in src:
             name=line #nom de l'échantillon
+            print(line)
             [mach,J,calibration,cat,num_plaque,id_ech,mthde]=line.split('_')
             
             #Dans la nouvelle base de données, un nom d'entrée sera organisée ainsi :
@@ -732,7 +740,19 @@ def compactAndExtractCompactedEntries(filename,limit=10):
     return data
 
 #%%
-            
+          
+def browserCompactFeatureRelatedData(feature,limit=10):
+    compactFeatureRelatedData(__browserDirectory(),feature,limit=limit)
+
+def compactFeatureRelatedData(folder,feature,limit=10):
+    
+    for (dirpath, dirnames, filenames) in os.walk(folder):
+        for i in filenames:
+            if(i.endswith(feature+"Sorted.txt") and i.startswith("Spectres_Concatenes")):
+                #Bon fichiers
+                compactEntries(dirpath+'/'+i)
+        break
+  
 def browserExtractFeatureRelatedData(feature,limit=10):
     return extractFeatureRelatedData(__browserDirectory(),feature,limit=limit)
 
@@ -796,5 +816,13 @@ def cropSpecterToMinimumLength(L,dim=2,offset=0):
             new_L.append(i[:minima_L-offset])
     return new_L
         
-        
+def castToFloat32(data):
+    #data = tout
+    copydata=data
+    for i in copydata:
+        #entrée
+        for j in i:
+            #données
+            j=np.float32(j)
+    return copydata
     
