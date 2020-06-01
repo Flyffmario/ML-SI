@@ -13,6 +13,7 @@ if (root_folder not in sys.path):
 import matplotlib.pyplot as plt
 
 import sklearn
+import neat
 
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import confusion_matrix
@@ -21,6 +22,7 @@ from sklearn.metrics import roc_curve, auc
 #%%
 
 class Study:
+    
     '''
     Study est une paillasse où seront expérimentés les différents algos de learning.
     
@@ -50,67 +52,93 @@ onstruc        - On peut configurer à volonté l'algo
     '''
     
     
-    def __init__(self):
+    def __init__(self,data,veritas,dict_veritas,algorithm):
         #ctr
         
         #Essentiel
-        self.data=None
-        self.veritas=None
-        self.dict_veritas=None
+        self.data=data
+        self.veritas=veritas
+        self.dict_veritas=dict_veritas
         
-        self.algorithm=None
+        self.algorithm=algorithm
         
-        self.X_train=None
-        self.Y_train=None
-        self.X_test=None
-        self.Y_test=None
+        self.X_train, self.X_test, self.Y_train, self.Y_test = sklearn.model_selection.train_test_split(self.data, self.veritas, test_size=0.2, random_state=0)
     
+    def showDataCharacteristics(self):
+        matrix_len=len(self.data[0])
+        unbalanced_matrix=False
+        for entry in self.data:
+            if len(entry)!=matrix_len:
+                unbalanced_matrix=True
+        if unbalanced_matrix==True:
+            print("[WARN] Matrice irrégulière. Veuillez vérifier la taille de chaque entrée.")
+            for entry in self.data:
+                print(len(entry))
+        else:
+            print("[INFO] Matrice régulière. Rien à signaler. Taille = {}x{}".format(len(self.data),matrix_len))
+            
     def testAccuracy(self):
-        scores = sklearn.model_selection.cross_val_score(self.algorithm, self.data, self.veritas, cv=2)
+        scores = sklearn.model_selection.cross_val_score(self.algorithm, self.data, self.veritas, cv=5)
         print("Accuracy: %0.2f (+/- %0.2f)" % (scores.mean(), scores.std() * 2))
         return scores.mean(), scores.std()*2
     
-    def train(self,size_of_test=0.2):
-        self.X_train, self.X_test, self.Y_train, self.Y_test = sklearn.model_selection.train_test_split(self.data, self.veritas, test_size=size_of_test, random_state=0)
+    def train(self):
         self.algorithm.fit(self.X_train,self.Y_train)
     
-    def confusionMatrix(self):
-        tn,fp,fn,tp=confusion_matrix(self.Y_test,self.algorithm.predict(self.X_test)).ravel()
-        sensibilite=tp/(tp+fn)
-        specificite=tn/(tn+fp)
+    # def confusionMatrix(self):
+    #     tn,fp,fn,tp=confusion_matrix(self.Y_test,self.algorithm.predict(self.X_test)).ravel()
+    #     sensibilite=tp/(tp+fn)
+    #     specificite=tn/(tn+fp)
         
-        print("Vraies souches : {} ; Fausses souches : {} ; Faux Clones : {} ; Vrais Clones : {}".format(tn,fn,fp,tp))
-        print("Sensibilité = {} ; Specificité = {}".format(sensibilite,specificite))
+    #     print("Vraies souches : {} ; Fausses souches : {} ; Faux Clones : {} ; Vrais Clones : {}".format(tn,fn,fp,tp))
+    #     print("Sensibilité = {} ; Specificité = {}".format(sensibilite,specificite))
     
-    def rocCurve(self):
+    # def rocCurve(self):
         
-        test_score=self.algorithm.predict_proba(self.X_test)
+    #     test_score=self.algorithm.predict_proba(self.X_test)
         
-        fpr = dict()
-        tpr = dict()
-        roc_auc = dict()
-        for i in range(2):
-            fpr[i], tpr[i], _ = roc_curve(self.Y_test,test_score[:,1])
-            roc_auc[i] = auc(fpr[i], tpr[i])
+    #     fpr = dict()
+    #     tpr = dict()
+    #     roc_auc = dict()
+    #     for i in range(2):
+    #         fpr[i], tpr[i], _ = roc_curve(self.Y_test,test_score[:,1])
+    #         roc_auc[i] = auc(fpr[i], tpr[i])
         
-        # Compute micro-average ROC curve and ROC area
-        fpr["micro"], tpr["micro"], _ = roc_curve(self.Y_test, test_score[:,1])
-        roc_auc["micro"] = auc(fpr["micro"], tpr["micro"])
+    #     # Compute micro-average ROC curve and ROC area
+    #     fpr["micro"], tpr["micro"], _ = roc_curve(self.Y_test, test_score[:,1])
+    #     roc_auc["micro"] = auc(fpr["micro"], tpr["micro"])
         
-        plt.figure()
-        lw = 2
-        plt.plot(fpr[1], tpr[1], color='darkorange',
-                 lw=lw, label='ROC curve (area = %0.2f)' % roc_auc[1])
-        plt.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--')
-        plt.xlim([0.0, 1.0])
-        plt.ylim([0.0, 1.05])
-        plt.xlabel('False Positive Rate')
-        plt.ylabel('True Positive Rate')
-        plt.title('Receiver operating characteristic example')
-        plt.legend(loc="lower right")
-        plt.show()
+    #     plt.figure()
+    #     lw = 2
+    #     plt.plot(fpr[1], tpr[1], color='darkorange',
+    #              lw=lw, label='ROC curve (area = %0.2f)' % roc_auc[1])
+    #     plt.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--')
+    #     plt.xlim([0.0, 1.0])
+    #     plt.ylim([0.0, 1.05])
+    #     plt.xlabel('False Positive Rate')
+    #     plt.ylabel('True Positive Rate')
+    #     plt.title('Receiver operating characteristic example')
+    #     plt.legend(loc="lower right")
+    #     plt.show()
         
+def electBestAccuracy(listOfStudies):
+    
+    #Extracting scores from data training
+    ML_score_dict=dict()
+    for i in listOfStudies:
+        score=i.testAccuracy()
+        ML_score_dict[i]=score
         
+    #Looking for maximum accuracy
+    maxAcc=0
+    bestStudy=None
+    for study in ML_score_dict.keys():
+        score_got=ML_score_dict[study]
+        if score_got[0]>maxAcc:
+            maxAcc=score_got[0]
+            bestStudy=study
+            
+    return bestStudy
 
 #%%
 

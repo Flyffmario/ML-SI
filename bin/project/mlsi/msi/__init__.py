@@ -96,7 +96,7 @@ def __MSI4_build_raw_spectrum(folder,lissage,ijk,mindelta):#mindelta = 20 puis 1
     spectrelu=[]
     parameters = open(folder  + "/acqu").read()
     if parameters =='' or np.fromfile(folder  +'/fid', dtype = np.int32).size==0:
-        motifs = [[0,0,0,1]]
+        motifs = [[0,0,0]]
         return motifs
         
     else:
@@ -137,6 +137,7 @@ def __MSI4_build_raw_spectrum(folder,lissage,ijk,mindelta):#mindelta = 20 puis 1
         else:
             pass
 
+    #Enregistrement de reliefs par calcul de dérivée
     relief = []
     epsilon=0#ligne de base
     i = 0
@@ -151,6 +152,7 @@ def __MSI4_build_raw_spectrum(folder,lissage,ijk,mindelta):#mindelta = 20 puis 1
         relief.append([spectre_liss[i+1][0], spectre_liss[i+1][1], pente])  #mz int     
         i += 1#
     
+    #Enregistrement de reliefs positifs (montée puis descente) parmis les reliefs enregistrés 
     changement = []
     i = 0
     while i < len(relief) - 1:
@@ -159,6 +161,8 @@ def __MSI4_build_raw_spectrum(folder,lissage,ijk,mindelta):#mindelta = 20 puis 1
         elif relief[i][2] is False and relief[i+1][2] is True:
             changement.append(relief[i])
         i += 1#mz int pente
+        
+    #Prends un triplet de reliefs positifs : si le triplet a une intensité moyenne supérieure à mindelta, le triplet est enregistré
     pic_list = []
     i = 1
     while i < len(changement) - 1:
@@ -169,9 +173,11 @@ def __MSI4_build_raw_spectrum(folder,lissage,ijk,mindelta):#mindelta = 20 puis 1
 
     pic_list = sorted(pic_list, key=lambda pic_list:pic_list[1],reverse = True)#tri par intensite
 
+    #Scaling
     i = 0
     while i < len(pic_list):
-        pic_list[i][0] = int(10000*sqrt(pic_list[i][0]))
+        #pic_list[i][0] = int(10000*sqrt(pic_list[i][0]))
+        pic_list[i][0] = int(sqrt(pic_list[i][0]))
         pic_list[i][1] = i/(i+10)#intens
         i += 1
 
@@ -185,13 +191,23 @@ def __MSI4_build_raw_spectrum(folder,lissage,ijk,mindelta):#mindelta = 20 puis 1
         while j < lenght - i:
             k = 1 #1
             while k < lenght - i - j:
+                
+                #Regarde les distances entre chaque pic existant
+                #Si la somme de leurs intensités est inférieure à ijk, le triplet est enregistré
+                
                 if pic_list[i + j + k][1] + pic_list[i + j][1] + pic_list[i][1] < ijk :
+                    
+                    #Position du premier pic
                     a = pic_list[i][0]
+                    #Distance du premier pic au deuxième pic
                     b = pic_list[i + j][0] - pic_list[i][0]
+                    #Distance du deuxième pic au troisième pic
                     c = pic_list[i + j + k][0] - pic_list[i + j][0]
+                    
                     #N'ai pas encore demandé pourquoi le 1 à la fin d'un triplet
                     #Est-ce nécessaire ? Pour le moment l'ai retiré.
                     #motifs.append([a, b, c, 1])
+                    
                     motifs.append([a,b,c])
                 k += 1    
             j += 1

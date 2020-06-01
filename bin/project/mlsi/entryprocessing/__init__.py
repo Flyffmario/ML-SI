@@ -87,30 +87,44 @@ def __getDimensionnality(fichier):
     Else, it will return 1.
     '''
     src=open(fichier,'r')
-    next(src)
-    next(src)
-    next(src)
-    next(src)
-    comp=next(src)
-    dim=0
-    if(len(comp.split('_'))>1):
-        #Fichier 1D, on est à l'entrée suivante
+    
+
+    try:
+        #au cas où le fichier ne contient qu'une entrée
+        
+        next(src) #nom
+        next(src) #id
+        next(src) #len
+        next(src) #data
+        
+        comp=next(src) #nouvelle ligne/len
+        
+        if(len(comp.split('_'))>1):
+            #Fichier 1D, on est à l'entrée suivante
+            dim=1
+        else:
+            #Fichier 2D, on est pas encore à l'entrée suivante
+            dim=2
+    except:
+        #si il y a exception, on est à la fin du fichier
+        #Il n'y avait que 4 lignes, soit une entrée 1D
+        #Si c'était 2D, il n'y aurait pas eu d'exceptions
         dim=1
-    else:
-        #Fichier 2D, on est pas encore à l'entrée suivante
-        dim=2
+        
     src.close()
     return dim
     
-def __browserDirectory():
+
+    
+def browserDirectory():
     Tk().withdraw() # we don't want a full GUI, so keep the root window from appearing
-    print("[INFO] A folder explorer window has been created. Please look for the folder where all the entries you want to concatene are.")
+    print("[INFO] A folder explorer window has been created.")
     folder = askdirectory() # show an "Open" dialog box and return the path to the selected folder
     return folder
 
 def __browserFile():
     Tk().withdraw() # we don't want a full GUI, so keep the root window from appearing
-    print("[INFO] A folder explorer window has been created. Please look for the folder where all the entries you want to concatene are.")
+    print("[INFO] A folder explorer window has been created.")
     fichier = askopenfilename() # show an "Open" dialog box and return the path to the selected folder
     return fichier
     
@@ -203,10 +217,21 @@ def __lookForUnreferencedAndMissing(fichier):
 
 #%%
 
+# def createTreeFolder(folder):
+#     '''
 
+#     Creates a tree folder to organise data
+    
+#     Returns nothing.
+
+#     '''
+    
+    
+
+#%%
 
 def browserNormalizeDatabase(add_info_type_1=[['191024','MYCO','E2']],add_info_type_2=[['191210','BACT','J3','E2']]):
-    normalizeDatabase(__browserDirectory(),add_info_type_1=add_info_type_1,add_info_type_2=add_info_type_2)
+    normalizeDatabase(browserDirectory(),add_info_type_1=add_info_type_1,add_info_type_2=add_info_type_2)
 
 def normalizeDatabase(folder,add_info_type_1=[['191024','MYCO','E2']],add_info_type_2=[['191210','BACT','J3','E2']]):
     
@@ -298,7 +323,7 @@ def normalizeDatabase(folder,add_info_type_1=[['191024','MYCO','E2']],add_info_t
 
                             os.rename(directory[0],folder+'/'+final_name)
         
-                    elif (len(debut_de_ligne)==4):
+                    elif (len(debut_de_ligne)>=3):
                         #model2
                         
                         contents=entry_name.split('_')
@@ -326,7 +351,7 @@ def normalizeDatabase(folder,add_info_type_1=[['191024','MYCO','E2']],add_info_t
 #%%
 
 def browserCreateconcatenatedEntries(func_used,lissage=6):
-    createConcatenatedEntries(__browserDirectory(),func_used,liss=lissage)
+    createConcatenatedEntries(browserDirectory(),func_used,liss=lissage)
 
 def createConcatenatedEntries(folder,func_used,liss=6):
     
@@ -398,7 +423,32 @@ def createConcatenatedEntries(folder,func_used,liss=6):
                 pass
 
 #%%
+
+def findLatestConcatenatedFile(folder,func_used):
+    #On veut juste l'arborescence directe des fichiers à la racine
+    f = []
+    for (dirpath, dirnames, filenames) in os.walk(folder):
+        f.extend(filenames)
+        break
+    max_date=0
+    max_time=0
+    for i in f:
+        if i.startswith("Spectres_Concatenes"):
+            if (not i.endswith("compacted.txt")) and (not i.endswith("Sorted.txt") and i.endswith(func_used.__name__+".txt")):
+                #On est sûr d'avoir des fichiers concaténés bruts sans aucun traitement préalable et avec la bonne fonction utilisée
+                #Maintenant il peut y avoir plusieurs fichiers préalables, on veut le plus récent
+                if (max_date==0 and max_time==0):
+                    max_date,max_time=int(i.split('_')[-3]),int(i.split('_')[-2])
+                else:
+                    current_date,current_time=int(i.split('_')[-3]),int(i.split('_')[-2])
+                    if (current_date>max_date):
+                        max_date=current_date
+                    if (current_time>max_time):
+                        max_time=current_time
+    fichier=folder+'/Spectres_Concatenes_'+folder.split('/')[-1]+'_'+str(max_date)+'_'+str(max_time)+'_'+func_used.__name__+".txt"
     
+    return fichier
+
 def browserUpdateConcatenatedentries():
     updateConcatenatedEntries(__browserFile())
 
@@ -462,7 +512,7 @@ def updateConcatenatedEntries(fichier,liss=6):
 #%%
 
 def browserUpdateDatabase(func_used):
-    updateDatabase(__browserDirectory(),func_used)
+    updateDatabase(browserDirectory(),func_used)
   
 def updateDatabase(folder,func_used,add_info_type_1=[['191024','MYCO','E2']],add_info_type_2=[['191210','BACT','J3','E2']],lissage=6):
     '''
@@ -495,45 +545,28 @@ def updateDatabase(folder,func_used,add_info_type_1=[['191024','MYCO','E2']],add
     #par défaut, essaies d'updater le concatenated entry le plus récent
     
     #On veut juste l'arborescence directe des fichiers à la racine
-    f = []
-    for (dirpath, dirnames, filenames) in os.walk(folder):
-        f.extend(filenames)
-        break
-    max_date=0
-    max_time=0
-    for i in filenames:
-        if i.startswith("Spectres_Concatenes"):
-            if (not i.endswith("compacted.txt")) and (not i.endswith("Sorted.txt") and i.endswith(func_used.__name__+".txt")):
-                #On est sûr d'avoir des fichiers concaténés bruts sans aucun traitement préalable et avec la bonne fonction utilisée
-                #Maintenant il peut y avoir plusieurs fichiers préalables, on veut le plus récent
-                if (max_date==0 and max_time==0):
-                    max_date,max_time=int(i.split('_')[-3]),int(i.split('_')[-2])
-                else:
-                    current_date,current_time=int(i.split('_')[-3]),int(i.split('_')[-2])
-                    if (current_date>max_date):
-                        max_date=current_date
-                    if (current_time>max_time):
-                        max_time=current_time
-    fichier=folder+'/Spectres_Concatenes_'+folder.split('/')[-1]+'_'+str(max_date)+'_'+str(max_time)+'_'+func_used.__name__+".txt"
-    
+    fichier=findLatestConcatenatedFile(folder,func_used)
+
     try:
         updateConcatenatedEntries(fichier,liss=lissage)
     except:
         createConcatenatedEntries(folder,func_used,liss=lissage)
-
         
 
 #%%
     
-def browserSortBy():
+def browserSortBy(mode=None):
     fichier=__browserFile()
-    mode=int(input("Specify mode used (0:type / 1:age / 2:calibration / 3:plate / 4:name_stem / 5:machine / 6:method)"))
-    sortBy(fichier,mode=mode)
+    if mode==None:
+        new_mode=int(input("Specify mode used (0:type / 1:age / 2:calibration / 3:plate / 4:name_stem / 5:machine / 6:method)"))
+        sortBy(fichier,mode=new_mode)
+    else:
+        sortBy(fichier,mode)
            
-def sortBy(fichier,mode=0):
+def sortBy(fichier,mode=None):
     
     '''
-    Automatically sorts an entries file by a characteristic defined by "mode".
+    Automatically sorts an entries file by a characteristic defined by "mode". If mode is None, prompt opened.
 
     Returns nothing, but creates as much txt files as there are different unique characteristics at the parent folder of the read file.
 
@@ -549,7 +582,10 @@ def sortBy(fichier,mode=0):
     '''
     
     dim=__getDimensionnality(fichier)
-    
+    if mode==None:
+        new_mode=int(input("Specify mode used (0:type / 1:age / 2:calibration / 3:plate / 4:name_stem / 5:machine / 6:method)"))
+    else:
+        new_mode=mode
     with open(fichier,'r') as src:
         file_dictionnary=dict()
         for line in src:
@@ -566,31 +602,31 @@ def sortBy(fichier,mode=0):
             sorting_var=None
             feature=None
             
-            if (mode==0):
+            if (new_mode==0):
                 #Tri suivant Clone ou non
                 sorting_var=cat
                 feature="category"
-            elif (mode==1):
+            elif (new_mode==1):
                 #Tri suivant J_culture
                 sorting_var=J
                 feature="age"
-            elif (mode==2):
+            elif (new_mode==2):
                 #Tri suivant J_calibration
                 sorting_var=calibration
                 feature="calibration"
-            elif (mode==3):
+            elif (new_mode==3):
                 #Tri suivant la plaque
                 sorting_var=num_plaque
                 feature="plate"
-            elif (mode==4):
+            elif (new_mode==4):
                 #Tri suivant la nom_echantillon sur la plaque
                 sorting_var=id_ech
                 feature="stem"
-            elif (mode==5):
+            elif (new_mode==5):
                 #Tri suivant la machine utilisée
                 sorting_var=mach
                 feature="machine"
-            elif (mode==6):
+            elif (new_mode==6):
                 #Tri suivant la méthode utilisée
                 sorting_var=mthde.split('\n')[0]
                 feature="method"
@@ -650,7 +686,6 @@ def compactEntries(fichier):
     #Test de formattage du fichier, si c'est 1D ou 2D
     
     dim=__getDimensionnality(fichier)
-    print(dim)
     
     #Extraction
     with open(fichier,'r') as src, open(fichier.split('.txt')[0]+"_compacted.txt",'w') as trgt:
@@ -741,10 +776,34 @@ def compactAndExtractCompactedEntries(filename,limit=10):
 
 #%%
           
-def browserCompactFeatureRelatedData(feature,limit=10):
-    compactFeatureRelatedData(__browserDirectory(),feature,limit=limit)
+def browserCompactFeatureRelatedData(new_mode,limit=10):
+    compactFeatureRelatedData(browserDirectory(),new_mode,limit=limit)
 
-def compactFeatureRelatedData(folder,feature,limit=10):
+def compactFeatureRelatedData(folder,new_mode,limit=10):
+    
+    if (new_mode==0):
+        #Tri suivant Clone ou non
+        feature="category"
+    elif (new_mode==1):
+        #Tri suivant J_culture
+        feature="age"
+    elif (new_mode==2):
+        #Tri suivant J_calibration
+        feature="calibration"
+    elif (new_mode==3):
+        #Tri suivant la plaque
+        feature="plate"
+    elif (new_mode==4):
+        #Tri suivant la nom_echantillon sur la plaque
+        feature="stem"
+    elif (new_mode==5):
+        #Tri suivant la machine utilisée
+        feature="machine"
+    elif (new_mode==6):
+        #Tri suivant la méthode utilisée
+        feature="method"
+    else:
+        raise("[ERROR] Invalid mode specified.")
     
     for (dirpath, dirnames, filenames) in os.walk(folder):
         for i in filenames:
@@ -753,10 +812,10 @@ def compactFeatureRelatedData(folder,feature,limit=10):
                 compactEntries(dirpath+'/'+i)
         break
   
-def browserExtractFeatureRelatedData(feature,limit=10):
-    return extractFeatureRelatedData(__browserDirectory(),feature,limit=limit)
+def browserExtractFeatureRelatedData(new_mode,limit=10):
+    return extractFeatureRelatedData(browserDirectory(),new_mode,limit=limit)
 
-def extractFeatureRelatedData(folder,feature,limit=10):
+def extractFeatureRelatedData(folder,new_mode,limit=10):
     '''
     Extracts all sorted compacted data in the folder root path, with specified feature in last Sorted field in its name.
     
@@ -767,6 +826,30 @@ def extractFeatureRelatedData(folder,feature,limit=10):
     
     data=[]
     verite=[]
+    
+    if (new_mode==0):
+        #Tri suivant Clone ou non
+        feature="category"
+    elif (new_mode==1):
+        #Tri suivant J_culture
+        feature="age"
+    elif (new_mode==2):
+        #Tri suivant J_calibration
+        feature="calibration"
+    elif (new_mode==3):
+        #Tri suivant la plaque
+        feature="plate"
+    elif (new_mode==4):
+        #Tri suivant la nom_echantillon sur la plaque
+        feature="stem"
+    elif (new_mode==5):
+        #Tri suivant la machine utilisée
+        feature="machine"
+    elif (new_mode==6):
+        #Tri suivant la méthode utilisée
+        feature="method"
+    else:
+        raise("[ERROR] Invalid mode specified.")
     
     for (dirpath, dirnames, filenames) in os.walk(folder):
         for i in filenames:
