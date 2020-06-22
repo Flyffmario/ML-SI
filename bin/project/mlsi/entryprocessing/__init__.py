@@ -6,6 +6,7 @@ Created on Tue Mar 10 14:24:54 2020
 """
 
 import os
+import os.path
 
 root_folder=".../"
 import sys
@@ -136,9 +137,9 @@ def __lookForUnreferencedAndMissing(fichier):
     Returns two lists : unreferenced and missing. Note that those lists list entries names and not entries paths.
     '''
 
-    path=fichier.split('/')
+    path=fichier.split(os.sep)
     name_fichier=path[-1]
-    master_folder='/'.join(path[:len(path)-1])
+    master_folder=os.sep.join(path[:len(path)-1])
     
     dim=__getDimensionnality(fichier)
     
@@ -166,7 +167,7 @@ def __lookForUnreferencedAndMissing(fichier):
             #Finalement, c'est le dossier le plus à la racine du fichier où on regarde qui nous intéresse
             name_of_folder_being_looked=directory[0].split(master_folder)[1][1:]
             #Prends tous les fichiers à la racine folder, leur retire folder
-            components_of_path=name_of_folder_being_looked.split('/')
+            components_of_path=name_of_folder_being_looked.split(os.sep)
             
             if('1' in components_of_path or '1SLin' in components_of_path or 'pdata' in components_of_path):
                 pass
@@ -180,9 +181,9 @@ def __lookForUnreferencedAndMissing(fichier):
                     #Il n'y a pas de subdir nommé '1', autrement dit nous ne sommes pas dans un dossier de spectre
                     #On ne peut être qu'à la racine où sont toutes les entrées ou plus haut.
                     
-                    if len(name_of_folder_being_looked.split('/'))>=2:
-                        category=name_of_folder_being_looked.split('/')[-2]
-                        entry_name=name_of_folder_being_looked.split('/')[-1]
+                    if len(name_of_folder_being_looked.split(os.sep))>=2:
+                        category=name_of_folder_being_looked.split(os.sep)[-2]
+                        entry_name=name_of_folder_being_looked.split(os.sep)[-1]
                         
                         existing_subdirectories.add(category)
                     else:
@@ -263,7 +264,7 @@ def normalizeDatabase(folder,add_info_type_1=[['191024','MYCO','E2']],add_info_t
         #Finalement, c'est le dossier le plus à la racine du fichier où on regarde qui nous intéresse
         name_of_folder_being_looked=directory[0].split(folder)[1][1:]
         #Prends tous les fichiers à la racine folder, leur retire folder
-        components_of_path=name_of_folder_being_looked.split('/')
+        components_of_path=name_of_folder_being_looked.split(os.sep)
         
         if('1' in components_of_path or '1SLin' in components_of_path or 'pdata' in components_of_path):
             pass
@@ -278,9 +279,9 @@ def normalizeDatabase(folder,add_info_type_1=[['191024','MYCO','E2']],add_info_t
                 #Il n'y a pas de subdir nommé '1', autrement dit nous ne sommes pas dans un dossier de spectre
                 #On ne peut être qu'à la racine où sont toutes les entrées ou plus haut.
                 
-                if len(name_of_folder_being_looked.split('/'))>=2:
-                    category=name_of_folder_being_looked.split('/')[-2]
-                    entry_name=name_of_folder_being_looked.split('/')[-1]
+                if len(name_of_folder_being_looked.split(os.sep))>=2:
+                    category=name_of_folder_being_looked.split(os.sep)[-2]
+                    entry_name=name_of_folder_being_looked.split(os.sep)[-1]
                 else:
                     entry_name=name_of_folder_being_looked
                 
@@ -321,7 +322,7 @@ def normalizeDatabase(folder,add_info_type_1=[['191024','MYCO','E2']],add_info_t
                             
                             final_name='_'.join([machine]+contents+[methode])
 
-                            os.rename(directory[0],folder+'/'+final_name)
+                            os.rename(directory[0],folder+os.sep+final_name)
         
                     elif (len(debut_de_ligne)>=3):
                         #model2
@@ -345,7 +346,7 @@ def normalizeDatabase(folder,add_info_type_1=[['191024','MYCO','E2']],add_info_t
                                 Jour='JX'
                                 methode='EX'
                             final_name='_'.join([contents[0],Jour,'20'+contents[1],category,contents[2],contents[3],methode])
-                            os.rename(directory[0],folder+'/'+category+'/'+final_name)
+                            os.rename(directory[0],folder+os.sep+category+os.sep+final_name)
     print("[INFO] Database at "+folder+" Normalized.")
 
 #%%
@@ -373,7 +374,7 @@ def createConcatenatedEntries(folder,func_used,liss=6):
     '''
 
     
-    filename=folder+"/Spectres_Concatenes_"+folder.split('/')[-1]+'_'+strftime("%Y%m%d")+"_"+strftime("%H%M%S")+'_'+func_used.__name__+".txt"
+    filename=folder+os.sep+"Spectres_Concatenes_"+folder.split(os.sep)[-1]+'_'+strftime("%Y%m%d")+"_"+strftime("%H%M%S")+'_'+func_used.__name__+".txt"
     
     try:
         os.remove(filename)
@@ -403,7 +404,7 @@ def createConcatenatedEntries(folder,func_used,liss=6):
                     #Sélectionner à partir de la fin
                     #[-1] renvoie oneSLine, [-2] renvoie one, ainsi de suite...
                     
-                    data_on_path=directory[0].split('/')
+                    data_on_path=directory[0].split(os.sep)
                     sample_name=data_on_path[-4]
                     specter_name=data_on_path[-3]
                     
@@ -445,7 +446,13 @@ def findLatestConcatenatedFile(folder,func_used):
                         max_date=current_date
                     if (current_time>max_time):
                         max_time=current_time
-    fichier=folder+'/Spectres_Concatenes_'+folder.split('/')[-1]+'_'+str(max_date)+'_'+str(max_time)+'_'+func_used.__name__+".txt"
+                        
+    #Ne pas oublier le '0' quand on est le matin..
+    if max_time<100000:
+      last_time='0'+str(max_time)
+    else:
+      last_time=str(max_time)
+    fichier=folder+os.sep+'Spectres_Concatenes_'+folder.split(os.sep)[-1]+'_'+str(max_date)+'_'+last_time+'_'+func_used.__name__+".txt"
     
     return fichier
 
@@ -462,8 +469,8 @@ def updateConcatenatedEntries(fichier,liss=6):
     '''
     
     
-    path=fichier.split('/')
-    master_folder='/'.join(path[:len(path)-1])
+    path=fichier.split(os.sep)
+    master_folder=os.sep.join(path[:len(path)-1])
     name_fichier=path[-1]
     name_of_func_used=name_fichier.split('_')[-1].split('.txt')[0]
     
@@ -480,7 +487,7 @@ def updateConcatenatedEntries(fichier,liss=6):
                 if(dirs!=[]):
                     if(dirs[0]=='pdata'):
                         #BACT_J3_20191210_autres_1011001152_1269_E2/0_C6/1/1SLin,['pdata'],['acqu', 'acqus', 'fid', 'sptype']
-                        data_on_path=root.split('/')
+                        data_on_path=root.split(os.sep)
                         sample_name=data_on_path[-4]
                         if (sample_name in unreferenced):
                             
@@ -505,7 +512,7 @@ def updateConcatenatedEntries(fichier,liss=6):
         components_of_name[-3]=strftime("%Y%m%d")
         components_of_name[-2]=strftime("%H%M%S")
         
-        os.rename(fichier,master_folder+'/'+'_'.join(components_of_name))
+        os.rename(fichier,master_folder+os.sep+'_'.join(components_of_name))
         
         print("[INFO] Updated "+name_fichier+", renamed to ",'_'.join(components_of_name))
 
@@ -761,12 +768,12 @@ def compactAndExtractCompactedEntries(filename,limit=10):
             temp_file.close()
             print("[INFO] Processed version of given file already existing in the current path. Skipping...")
         except:
-             print("[INFO] Processing "+filename.split('/')[-1]+"...")
+             print("[INFO] Processing "+filename.split(os.sep)[-1]+"...")
              compactEntries(filename)
              print("[INFO] Process done !")
              
         #Si la version compactée n'existait pas, elle existe maintenant.
-        print("[INFO] Extracting "+filename.split('/')[-1].split('.txt')[0]+"_compacted.txt"+"...")
+        print("[INFO] Extracting "+filename.split(os.sep)[-1].split('.txt')[0]+"_compacted.txt"+"...")
         print(filename.split('.txt')[0]+'_compacted.txt')
         data=extractCompactedEntries(filename.split('.txt')[0]+'_compacted.txt',limit=10)
     except:
@@ -809,7 +816,7 @@ def compactFeatureRelatedData(folder,new_mode,limit=10):
         for i in filenames:
             if(i.endswith(feature+"Sorted.txt") and i.startswith("Spectres_Concatenes")):
                 #Bon fichiers
-                compactEntries(dirpath+'/'+i)
+                compactEntries(dirpath+os.sep+i)
         break
   
 def browserExtractFeatureRelatedData(new_mode,limit=10):
@@ -860,7 +867,7 @@ def extractFeatureRelatedData(folder,new_mode,limit=10):
                 if (feature_extracted==feature):
                     #Le fichier récupéré est un fichier trié comme on le souhaite
                     #On l'extrait
-                    current_path=dirpath+'/'+i
+                    current_path=dirpath+os.sep+i
                     current_data=extractCompactedEntries(current_path,limit=limit)
                     
                     feature_category=i.split('_')[-3]

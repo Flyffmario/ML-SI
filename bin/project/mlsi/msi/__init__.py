@@ -152,7 +152,7 @@ def __MSI4_build_raw_spectrum(folder,lissage,ijk,mindelta):#mindelta = 20 puis 1
         relief.append([spectre_liss[i+1][0], spectre_liss[i+1][1], pente])  #mz int     
         i += 1#
     
-    #Enregistrement de reliefs positifs (montée puis descente) parmis les reliefs enregistrés 
+    #Enregistrement de reliefs positifs et negatifs (montée puis descente, descente puis montée) parmis les reliefs enregistrés 
     changement = []
     i = 0
     while i < len(relief) - 1:
@@ -162,7 +162,9 @@ def __MSI4_build_raw_spectrum(folder,lissage,ijk,mindelta):#mindelta = 20 puis 1
             changement.append(relief[i])
         i += 1#mz int pente
         
-    #Prends un triplet de reliefs positifs : si le triplet a une intensité moyenne supérieure à mindelta, le triplet est enregistré
+    #Prends un triplet de reliefs
+    #Si le relief central est positif, et le triplet a une intensité moyenne supérieure à mindelta
+    #Alors le relief central est enregistré
     pic_list = []
     i = 1
     while i < len(changement) - 1:
@@ -171,29 +173,42 @@ def __MSI4_build_raw_spectrum(folder,lissage,ijk,mindelta):#mindelta = 20 puis 1
             pic_list.append([changement[i][0], intensite])
         i += 1
 
-    pic_list = sorted(pic_list, key=lambda pic_list:pic_list[1],reverse = True)#tri par intensite
+    pic_list = sorted(pic_list, key=lambda pic_list:pic_list[1])#tri par intensite
 
-    #Scaling
+    #Scaling de la position et de l'intensité
     i = 0
     while i < len(pic_list):
+        
+        #Ça a pas l'air très linéaire...
+        
         #pic_list[i][0] = int(10000*sqrt(pic_list[i][0]))
-        pic_list[i][0] = int(sqrt(pic_list[i][0]))
+        pic_list[i][0] = int(pic_list[i][0])
         pic_list[i][1] = i/(i+10)#intens
         i += 1
 
-    pic_list = pic_list[0: 50]#50 plus fortes intensites
+    #50 plus fortes intensites
+    pic_list.reverse()
+    pic_list = pic_list[0: 20]
 
     motifs = []
-    i = 2
+    #Pourquoi commencer à 2 ? Je veux bien qu'on arrête 2 positions avant la fin mais pas au début...
+    #i = 2
+    i=0
     lenght = len(pic_list)
-    while i < lenght:
+    #while i < lenght:
+    while i < lenght - 2:
         j = 1#1
-        while j < lenght - i:
+        #while j < lenght - i:
+        while j < lenght - 1 - i:
             k = 1 #1
+            #while k < lenght - i - j:
             while k < lenght - i - j:
                 
-                #Regarde les distances entre chaque pic existant
                 #Si la somme de leurs intensités est inférieure à ijk, le triplet est enregistré
+                #Sont ensuite calculés les distances entre chaque relief central existant
+                #Un motif est composé de la position du premier relief positif, de sa distance au deuxième relief positif, et de la distance du deuxième relief positif au troisième relief positif
+                
+                #Pourquoi les intensités devraient elles s'additionner pour donner quelque chose d'inférieur à ijk ?
                 
                 if pic_list[i + j + k][1] + pic_list[i + j][1] + pic_list[i][1] < ijk :
                     
@@ -204,7 +219,7 @@ def __MSI4_build_raw_spectrum(folder,lissage,ijk,mindelta):#mindelta = 20 puis 1
                     #Distance du deuxième pic au troisième pic
                     c = pic_list[i + j + k][0] - pic_list[i + j][0]
                     
-                    #N'ai pas encore demandé pourquoi le 1 à la fin d'un triplet
+                    #Je n'ai pas encore demandé pourquoi le 1 à la fin d'un triplet
                     #Est-ce nécessaire ? Pour le moment l'ai retiré.
                     #motifs.append([a, b, c, 1])
                     

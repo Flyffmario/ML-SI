@@ -10,14 +10,14 @@ import sys
 if (root_folder not in sys.path):
     sys.path.append(root_folder)
 
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 
 import sklearn
-import neat
+#import neat
 
-from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import confusion_matrix
-from sklearn.metrics import roc_curve, auc
+#from sklearn.linear_model import LogisticRegression
+#from sklearn.metrics import confusion_matrix
+#from sklearn.metrics import roc_curve, auc
 
 #%%
 
@@ -84,6 +84,21 @@ onstruc        - On peut configurer à volonté l'algo
     
     def train(self):
         self.algorithm.fit(self.X_train,self.Y_train)
+        
+    def mergeClasses(self,merged_id,being_merged_id):
+        #merged_id --> being_merged_id
+        #On merge 3 vers 2 : merged_id=3, being_merged_id=2
+    
+        new_veritas=self.veritas
+        for i in new_veritas:
+            if i==merged_id:
+                i=being_merged_id
+                
+        new_dict=self.dict_veritas
+        del new_dict[merged_id]
+        
+        self.veritas=new_veritas
+        self.dict_veritas=new_dict
     
     # def confusionMatrix(self):
     #     tn,fp,fn,tp=confusion_matrix(self.Y_test,self.algorithm.predict(self.X_test)).ravel()
@@ -120,25 +135,112 @@ onstruc        - On peut configurer à volonté l'algo
     #     plt.title('Receiver operating characteristic example')
     #     plt.legend(loc="lower right")
     #     plt.show()
-        
+
+#NEAT est plutôt du learning par renforcement
+# class NEATClassifier:
+#     # 2-input XOR inputs and expected outputs.
+    
+    
+#     def __init__(self):
+#         self.xor_inputs = [(0.0, 0.0), (0.0, 1.0), (1.0, 0.0), (1.0, 1.0)]
+#         self.xor_outputs = [   (0.0,),     (1.0,),     (1.0,),     (0.0,)]
+    
+    
+#     def eval_genomes(self,genomes, config):
+#         for genome_id, genome in genomes:
+#             genome.fitness = 4.0
+#             net = neat.nn.FeedForwardNetwork.create(genome, config)
+#             for xi, xo in zip(self.xor_inputs, self.xor_outputs):
+#                 output = net.activate(xi)
+#                 genome.fitness -= (output[0] - xo[0]) ** 2
+    
+    
+#     def run(self,config_file):
+#         # Load configuration.
+#         config = neat.Config(neat.DefaultGenome, neat.DefaultReproduction,
+#                              neat.DefaultSpeciesSet, neat.DefaultStagnation,
+#                              config_file)
+    
+#         # Create the population, which is the top-level object for a NEAT run.
+#         p = neat.Population(config)
+    
+#         # Add a stdout reporter to show progress in the terminal.
+#         p.add_reporter(neat.StdOutReporter(True))
+#         stats = neat.StatisticsReporter()
+#         p.add_reporter(stats)
+#         p.add_reporter(neat.Checkpointer(5))
+    
+#         # Run for up to 300 generations.
+#         winner = p.run(self.eval_genomes, 300)
+    
+#         # Display the winning genome.
+#         print('\nBest genome:\n{!s}'.format(winner))
+    
+#         # Show output of the most fit genome against training data.
+#         print('\nOutput:')
+#         winner_net = neat.nn.FeedForwardNetwork.create(winner, config)
+#         for xi, xo in zip(self.xor_inputs, self.xor_outputs):
+#             output = winner_net.activate(xi)
+#             print("input {!r}, expected output {!r}, got {!r}".format(xi, xo, output))
+    
+#         p = neat.Checkpointer.restore_checkpoint('neat-checkpoint-4')
+#         p.run(self.eval_genomes, 10)
+
 def electBestAccuracy(listOfStudies):
     
-    #Extracting scores from data training
-    ML_score_dict=dict()
-    for i in listOfStudies:
-        score=i.testAccuracy()
-        ML_score_dict[i]=score
+    # #Extracting scores from data training
+    # ML_score_dict=dict()
+    # for i in listOfStudies:
+    #     score=i.testAccuracy()
+    #     ML_score_dict[i]=score
         
-    #Looking for maximum accuracy
-    maxAcc=0
-    bestStudy=None
-    for study in ML_score_dict.keys():
-        score_got=ML_score_dict[study]
-        if score_got[0]>maxAcc:
-            maxAcc=score_got[0]
-            bestStudy=study
+    # #Looking for maximum accuracy
+    # maxAcc=0
+    # bestStudy=None
+    # for study in ML_score_dict.keys():
+    #     score_got=ML_score_dict[study]
+    #     if score_got[0]>maxAcc:
+    #         maxAcc=score_got[0]
+    #         bestStudy=study
+    
+    podium=[]
+    
+    for i in range(len(listOfStudies)):
+        podium.append([listOfStudies[i],listOfStudies[i].testAccuracy(),i])
+        
+    podium = sorted(podium, key=lambda podium:podium[1][0])#tri par intensite
+    podium.reverse()
+    podium_bests=podium[:10] #10 meilleurs
+    podium_worst=podium[-10:] #10 pires
             
-    return bestStudy
+    return podium_bests,podium_worst
+
+def MSI4CropNTriplets(data,n):
+    new_data=[]
+    for i in data:
+        new_data.append(i[:(3*n)])
+    return new_data
+
+def mergeClasses(veritas,dict_veritas,merged_id,being_merged_id):
+    #merged_id --> being_merged_id
+    #On merge 3 vers 2 : merged_id=3, being_merged_id=2
+
+    new_veritas=veritas
+    for i in range(len(new_veritas)):
+        if new_veritas[i]==merged_id:
+            new_veritas[i]=being_merged_id
+            
+    new_dict=dict_veritas
+    del new_dict[merged_id]
+    
+    #Il faut minimiser le nombre de classes décrites
+    #Il peut y avoir des trous genre 0,2,3,4,5..
+    #On doit trouver ces trous, et les combler.
+    
+    return new_veritas,new_dict
+    
+
+            
 
 #%%
 
