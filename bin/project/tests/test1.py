@@ -39,7 +39,7 @@ import matplotlib.pyplot as plt
 #ATTENTION ! Choisissez la racine de fichier où toutes les entrées sont !
 #La fonction va normaliser la base, et la concaténer en un fichier "Spectres_Concatenes_<parent folder>_<date d'édition>_<horaire d'édition>_<mlsi.MSI>.txt"
 working_directory=mlsi.entryprocessing.browserDirectory()
-used_function=mlsi.msi.MSI4
+used_function=mlsi.msi.MSI2
 #Fin des paramètres de base
 
 #DEBUT PIPELINE
@@ -67,6 +67,11 @@ new_data=mlsi.learning.MSI4CropNTriplets(new_data, 200)
 
 #FIN PIPELINE
 
+plt.plot(data[0][len(data[0])//2:])
+plt.xlabel("index")
+plt.ylabel("intensité")
+plt.show()
+
 #%%
 #Learning Part
 
@@ -86,7 +91,7 @@ for i in range(1,101):
         #Note: The default solver ‘adam’ works pretty well on relatively large datasets
         #(with thousands of training samples or more) in terms of both training time and
         #validation score. For small datasets, however, ‘lbfgs’ can converge faster and perform better.
-        listOfAlgorithms.append(MLPClassifier(solver='lbfgs', alpha=1e-5,hidden_layer_sizes=(i, j), random_state=1))
+        listOfAlgorithms.append(MLPClassifier(solver='lbfgs', alpha=1e-5,hidden_layer_sizes=(i, j), random_state=1,max_iter=1000))
 
 #print("Scaling Data...")
 #min_max_scaler=sklearn.preprocessing.StandardScaler()
@@ -118,23 +123,7 @@ for current_study,score,position in podium[1]:
 best_study=podium[0][0][0]
 best_study.train()
 print(best_study.algorithm.predict(best_study.X_test))
-print(best_study.Y_test)        
+print(best_study.Y_test)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+#Regression logistique
+logisticStudy

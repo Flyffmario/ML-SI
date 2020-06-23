@@ -174,6 +174,7 @@ def __MSI4_build_raw_spectrum(folder,lissage,ijk,mindelta):#mindelta = 20 puis 1
         i += 1
 
     pic_list = sorted(pic_list, key=lambda pic_list:pic_list[1])#tri par intensite
+    pic_list.reverse()
 
     #Scaling de la position et de l'intensité
     i = 0
@@ -181,15 +182,17 @@ def __MSI4_build_raw_spectrum(folder,lissage,ijk,mindelta):#mindelta = 20 puis 1
         
         #Ça a pas l'air très linéaire...
         
-        #pic_list[i][0] = int(10000*sqrt(pic_list[i][0]))
-        pic_list[i][0] = int(pic_list[i][0])
+        pic_list[i][0] = int(10000*sqrt(pic_list[i][0]))
+        #pic_list[i][0] = int(pic_list[i][0])
         pic_list[i][1] = i/(i+10)#intens
         i += 1
 
     #50 plus fortes intensites
-    pic_list.reverse()
-    pic_list = pic_list[0: 20]
+    pic_list = pic_list[0: 50]
 
+    #Retri par masse/charge
+    pic_list=sorted(pic_list, key=lambda pic_list:pic_list[0])
+    
     motifs = []
     #Pourquoi commencer à 2 ? Je veux bien qu'on arrête 2 positions avant la fin mais pas au début...
     #i = 2
@@ -211,6 +214,8 @@ def __MSI4_build_raw_spectrum(folder,lissage,ijk,mindelta):#mindelta = 20 puis 1
                 #Pourquoi les intensités devraient elles s'additionner pour donner quelque chose d'inférieur à ijk ?
                 
                 if pic_list[i + j + k][1] + pic_list[i + j][1] + pic_list[i][1] < ijk :
+                    
+                    #print(pic_list[i][0],pic_list[i+j][0],pic_list[i+j+k][0])
                     
                     #Position du premier pic
                     a = pic_list[i][0]
@@ -324,8 +329,17 @@ def MSI2(folder,lissage=6):
 
     #print(int_corrigee)
     
+    #Pour éviter les valeurs négatives..
+    int_corrigee_2=[]
+    for i in int_corrigee:
+        if i<0:
+            int_corrigee_2.append(0)
+        else:
+            int_corrigee_2.append(i)
+    
     #Exportation
-    return [liste_masses,int_corrigee]
+    return [int_corrigee_2]
+
 
 #%%
 
@@ -419,7 +433,7 @@ def MSI3(folder,lissage=6):
 
 #%%
 
-def MSI4(folder,lissage=6,ijk=5,mindelta=20):
+def MSI4(folder,lissage=6,ijk=1,mindelta=20):
     
     motif=__MSI4_build_raw_spectrum(folder,lissage=lissage,ijk=ijk,mindelta=mindelta)
     motifs=[inner for outer in motif for inner in outer]
