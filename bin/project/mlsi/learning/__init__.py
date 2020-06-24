@@ -10,13 +10,15 @@ import sys
 if (root_folder not in sys.path):
     sys.path.append(root_folder)
 
-#import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
+
+import inspect
 
 import sklearn
-#import neat
+import sklearn.metrics
 
+#import neat
 #from sklearn.linear_model import LogisticRegression
-#from sklearn.metrics import confusion_matrix
 #from sklearn.metrics import roc_curve, auc
 
 #%%
@@ -83,7 +85,12 @@ onstruc        - On peut configurer à volonté l'algo
         return scores.mean(), scores.std()*2
     
     def train(self):
-        self.algorithm.fit(self.X_train,self.Y_train)
+        
+        if inspect.isinstance(self.algorithm,tf.keras.models.Sequential):
+            #do things specific to tf.keras
+            pass
+        else:
+            self.algorithm.fit(self.X_train,self.Y_train)
         
     def mergeClasses(self,merged_id,being_merged_id):
         #merged_id --> being_merged_id
@@ -99,6 +106,24 @@ onstruc        - On peut configurer à volonté l'algo
         
         self.veritas=new_veritas
         self.dict_veritas=new_dict
+        
+    def confusionMatrix(self):
+        class_names=self.dict_veritas.values()
+        titles_options=[("Confusion Matrix, Nb. of cases",None),("Confusion Matrix, Normalized",'true')]
+        
+        for title,normalize in titles_options:
+            disp=sklearn.metrics.plot_confusion_matrix(
+                self.algorithm,self.X_test,self.Y_test,
+                display_labels=class_names,
+                cmap=plt.cm.Blues,
+                normalize=normalize
+                )
+            disp.ax_.set_title(title)            
+            print(title)
+            
+        plt.show()
+        
+        return disp.confusion_matrix
     
     # def confusionMatrix(self):
     #     tn,fp,fn,tp=confusion_matrix(self.Y_test,self.algorithm.predict(self.X_test)).ravel()

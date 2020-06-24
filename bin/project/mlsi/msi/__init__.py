@@ -433,7 +433,7 @@ def MSI3(folder,lissage=6):
 
 #%%
 
-def MSI4(folder,lissage=6,ijk=1,mindelta=20):
+def MSI4(folder,lissage=6,ijk=1.5,mindelta=20):
     
     motif=__MSI4_build_raw_spectrum(folder,lissage=lissage,ijk=ijk,mindelta=mindelta)
     motifs=[inner for outer in motif for inner in outer]

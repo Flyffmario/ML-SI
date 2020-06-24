@@ -53,7 +53,7 @@ if entree=="y":
     
     latestFile=mlsi.entryprocessing.findLatestConcatenatedFile(working_directory, used_function)
     mlsi.entryprocessing.sortBy(latestFile,mode=chosen_mode)
-    mlsi.entryprocessing.compactFeatureRelatedData(working_directory,chosen_mode,limit=100)
+    mlsi.entryprocessing.compactFeatureRelatedData(working_directory,chosen_mode)
 else:
     chosen_mode=int(input("Choose feature related data to extract (0:type / 1:age / 2:calibration / 3:plate / 4:name_stem / 5:machine / 6:method)"))
 
@@ -63,7 +63,7 @@ data,verite,dict_label=mlsi.entryprocessing.extractFeatureRelatedData(working_di
 #Traitement des données extraites
 data=mlsi.entryprocessing.castToFloat32(data)
 new_data=mlsi.entryprocessing.cropSpecterToMinimumLength(data)
-new_data=mlsi.learning.MSI4CropNTriplets(new_data, 200)
+#new_data=mlsi.learning.MSI4CropNTriplets(new_data, 200)
 
 #FIN PIPELINE
 
@@ -91,11 +91,11 @@ for i in range(1,101):
         #Note: The default solver ‘adam’ works pretty well on relatively large datasets
         #(with thousands of training samples or more) in terms of both training time and
         #validation score. For small datasets, however, ‘lbfgs’ can converge faster and perform better.
-        listOfAlgorithms.append(MLPClassifier(solver='lbfgs', alpha=1e-5,hidden_layer_sizes=(i, j), random_state=1,max_iter=1000))
+        listOfAlgorithms.append(MLPClassifier(solver='adam', alpha=1e-5,hidden_layer_sizes=(i, j), random_state=1,max_iter=10000))
 
-#print("Scaling Data...")
-#min_max_scaler=sklearn.preprocessing.StandardScaler()
-#new_data=min_max_scaler.fit_transform(new_data)
+print("Scaling Data...")
+min_max_scaler=sklearn.preprocessing.MinMaxScaler()
+new_data=min_max_scaler.fit_transform(new_data)
         
 #
 
@@ -125,5 +125,6 @@ best_study.train()
 print(best_study.algorithm.predict(best_study.X_test))
 print(best_study.Y_test)
 
+best_study.confusionMatrix()
+
 #Regression logistique
-logisticStudy

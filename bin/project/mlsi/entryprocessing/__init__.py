@@ -597,7 +597,6 @@ def sortBy(fichier,mode=None):
         file_dictionnary=dict()
         for line in src:
             name=line #nom de l'échantillon
-            print(line)
             [mach,J,calibration,cat,num_plaque,id_ech,mthde]=line.split('_')
             
             #Dans la nouvelle base de données, un nom d'entrée sera organisée ainsi :
@@ -716,14 +715,15 @@ def compactEntries(fichier):
             
             trgt.write(z_string)
 
-def browserExtractCompactedEntries(limit=10):
+def browserExtractCompactedEntries(limit=-1):
     return extractCompactedEntries(__browserFile(),limit=limit)
 
-def extractCompactedEntries(fichier,limit=10):
+def extractCompactedEntries(fichier,limit=-1):
     
     '''
     Extracts a set number of entries from a txt file with the mention "_compacted" at the end.
     There are no randomisation : the X first entries will be extracted, X being equal to the parameter "limit".
+    limit=-1 means it will take all
     
     Returns a list of length equal to "limit", of specters (which are lists too).
     
@@ -735,7 +735,7 @@ def extractCompactedEntries(fichier,limit=10):
         L=[]
         i=0
         for line in src:
-            if(i>=limit):
+            if(i>=limit and i!=-1):
                 #Faut mettre une limite sinon c'est la merde, ça prend trop de temps à calculer...
                 break
             donnee_brute=line.split('\n')
@@ -748,11 +748,11 @@ def extractCompactedEntries(fichier,limit=10):
 
 #%%
         
-def browserCompactAndExtractCompactedEntries(limit=10):
+def browserCompactAndExtractCompactedEntries(limit=-1):
     data=compactAndExtractCompactedEntries(__browserFile(),limit=limit)
     return data
 
-def compactAndExtractCompactedEntries(filename,limit=10):
+def compactAndExtractCompactedEntries(filename,limit=-1):
     '''
     Compacts the file specified and extracts its content in a list. If a compacted version already exists, it ignores compaction and straight up extracts the contents of the compacted file in a list.
     
@@ -775,7 +775,7 @@ def compactAndExtractCompactedEntries(filename,limit=10):
         #Si la version compactée n'existait pas, elle existe maintenant.
         print("[INFO] Extracting "+filename.split(os.sep)[-1].split('.txt')[0]+"_compacted.txt"+"...")
         print(filename.split('.txt')[0]+'_compacted.txt')
-        data=extractCompactedEntries(filename.split('.txt')[0]+'_compacted.txt',limit=10)
+        data=extractCompactedEntries(filename.split('.txt')[0]+'_compacted.txt',limit=limit)
     except:
         print("[ERROR] Not a Valid path or Not a .txt file or Entries not found/not valid in the mentioned file.")
         data=None
@@ -783,10 +783,10 @@ def compactAndExtractCompactedEntries(filename,limit=10):
 
 #%%
           
-def browserCompactFeatureRelatedData(new_mode,limit=10):
+def browserCompactFeatureRelatedData(new_mode,limit=-1):
     compactFeatureRelatedData(browserDirectory(),new_mode,limit=limit)
 
-def compactFeatureRelatedData(folder,new_mode,limit=10):
+def compactFeatureRelatedData(folder,new_mode,limit=-1):
     
     if (new_mode==0):
         #Tri suivant Clone ou non
@@ -819,10 +819,10 @@ def compactFeatureRelatedData(folder,new_mode,limit=10):
                 compactEntries(dirpath+os.sep+i)
         break
   
-def browserExtractFeatureRelatedData(new_mode,limit=10):
+def browserExtractFeatureRelatedData(new_mode,limit=100):
     return extractFeatureRelatedData(browserDirectory(),new_mode,limit=limit)
 
-def extractFeatureRelatedData(folder,new_mode,limit=10):
+def extractFeatureRelatedData(folder,new_mode,limit=100):
     '''
     Extracts all sorted compacted data in the folder root path, with specified feature in last Sorted field in its name.
     
