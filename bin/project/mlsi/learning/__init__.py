@@ -12,10 +12,14 @@ if (root_folder not in sys.path):
 
 import matplotlib.pyplot as plt
 
-import inspect
+import numpy as np
+import tensorflow as tf
 
 import sklearn
+print(sklearn.__version__)
 import sklearn.metrics
+from sklearn.metrics import plot_confusion_matrix
+from sklearn.metrics import accuracy_score
 
 #import neat
 #from sklearn.linear_model import LogisticRegression
@@ -53,67 +57,44 @@ onstruc        - On peut configurer à volonté l'algo
     https://stackoverflow.com/questions/46770088/multioutput-classifier-learning-5-target-variables
     '''
     
+    '''
+    Stocker à nouveau les données à chaque fois est une mauvaise idée
+    La RAM crash sinon..
+    '''
     
-    def __init__(self,data,veritas,dict_veritas,algorithm):
+    def __init__(self,algorithm):
         #ctr
-        
-        #Essentiel
-        self.data=data
-        self.veritas=veritas
-        self.dict_veritas=dict_veritas
-        
         self.algorithm=algorithm
         
-        self.X_train, self.X_test, self.Y_train, self.Y_test = sklearn.model_selection.train_test_split(self.data, self.veritas, test_size=0.2, random_state=0)
-    
-    def showDataCharacteristics(self):
-        matrix_len=len(self.data[0])
+    def showDataCharacteristics(self,data):
+        matrix_len=len(data[0])
         unbalanced_matrix=False
-        for entry in self.data:
+        for entry in data:
             if len(entry)!=matrix_len:
                 unbalanced_matrix=True
         if unbalanced_matrix==True:
             print("[WARN] Matrice irrégulière. Veuillez vérifier la taille de chaque entrée.")
-            for entry in self.data:
+            for entry in data:
                 print(len(entry))
         else:
             print("[INFO] Matrice régulière. Rien à signaler. Taille = {}x{}".format(len(self.data),matrix_len))
             
-    def testAccuracy(self):
-        scores = sklearn.model_selection.cross_val_score(self.algorithm, self.data, self.veritas, cv=5)
+    def testAccuracy(self,data,veritas):
+        scores = sklearn.model_selection.cross_val_score(self.algorithm, data, veritas, cv=5)
         print("Accuracy: %0.2f (+/- %0.2f)" % (scores.mean(), scores.std() * 2))
         return scores.mean(), scores.std()*2
     
-    def train(self):
+    def train(self,X_train,Y_train):
         
-        if inspect.isinstance(self.algorithm,tf.keras.models.Sequential):
-            #do things specific to tf.keras
-            pass
-        else:
-            self.algorithm.fit(self.X_train,self.Y_train)
+        self.algorithm.fit(X_train,Y_train)
         
-    def mergeClasses(self,merged_id,being_merged_id):
-        #merged_id --> being_merged_id
-        #On merge 3 vers 2 : merged_id=3, being_merged_id=2
-    
-        new_veritas=self.veritas
-        for i in new_veritas:
-            if i==merged_id:
-                i=being_merged_id
-                
-        new_dict=self.dict_veritas
-        del new_dict[merged_id]
-        
-        self.veritas=new_veritas
-        self.dict_veritas=new_dict
-        
-    def confusionMatrix(self):
-        class_names=self.dict_veritas.values()
+    def confusionMatrix(self,X_test,Y_test,dict_veritas):
+        class_names=dict_veritas.values()
         titles_options=[("Confusion Matrix, Nb. of cases",None),("Confusion Matrix, Normalized",'true')]
         
         for title,normalize in titles_options:
-            disp=sklearn.metrics.plot_confusion_matrix(
-                self.algorithm,self.X_test,self.Y_test,
+            disp=plot_confusion_matrix(
+                self.algorithm,X_test,Y_test,
                 display_labels=class_names,
                 cmap=plt.cm.Blues,
                 normalize=normalize
@@ -124,42 +105,6 @@ onstruc        - On peut configurer à volonté l'algo
         plt.show()
         
         return disp.confusion_matrix
-    
-    # def confusionMatrix(self):
-    #     tn,fp,fn,tp=confusion_matrix(self.Y_test,self.algorithm.predict(self.X_test)).ravel()
-    #     sensibilite=tp/(tp+fn)
-    #     specificite=tn/(tn+fp)
-        
-    #     print("Vraies souches : {} ; Fausses souches : {} ; Faux Clones : {} ; Vrais Clones : {}".format(tn,fn,fp,tp))
-    #     print("Sensibilité = {} ; Specificité = {}".format(sensibilite,specificite))
-    
-    # def rocCurve(self):
-        
-    #     test_score=self.algorithm.predict_proba(self.X_test)
-        
-    #     fpr = dict()
-    #     tpr = dict()
-    #     roc_auc = dict()
-    #     for i in range(2):
-    #         fpr[i], tpr[i], _ = roc_curve(self.Y_test,test_score[:,1])
-    #         roc_auc[i] = auc(fpr[i], tpr[i])
-        
-    #     # Compute micro-average ROC curve and ROC area
-    #     fpr["micro"], tpr["micro"], _ = roc_curve(self.Y_test, test_score[:,1])
-    #     roc_auc["micro"] = auc(fpr["micro"], tpr["micro"])
-        
-    #     plt.figure()
-    #     lw = 2
-    #     plt.plot(fpr[1], tpr[1], color='darkorange',
-    #              lw=lw, label='ROC curve (area = %0.2f)' % roc_auc[1])
-    #     plt.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--')
-    #     plt.xlim([0.0, 1.0])
-    #     plt.ylim([0.0, 1.05])
-    #     plt.xlabel('False Positive Rate')
-    #     plt.ylabel('True Positive Rate')
-    #     plt.title('Receiver operating characteristic example')
-    #     plt.legend(loc="lower right")
-    #     plt.show()
 
 #NEAT est plutôt du learning par renforcement
 # class NEATClassifier:
@@ -211,27 +156,19 @@ onstruc        - On peut configurer à volonté l'algo
 #         p = neat.Checkpointer.restore_checkpoint('neat-checkpoint-4')
 #         p.run(self.eval_genomes, 10)
 
-def electBestAccuracy(listOfStudies):
-    
-    # #Extracting scores from data training
-    # ML_score_dict=dict()
-    # for i in listOfStudies:
-    #     score=i.testAccuracy()
-    #     ML_score_dict[i]=score
-        
-    # #Looking for maximum accuracy
-    # maxAcc=0
-    # bestStudy=None
-    # for study in ML_score_dict.keys():
-    #     score_got=ML_score_dict[study]
-    #     if score_got[0]>maxAcc:
-    #         maxAcc=score_got[0]
-    #         bestStudy=study
+#%%
+
+def electBestAccuracy(listOfStudies,data,veritas,X_train,X_test,y_train,y_test):
     
     podium=[]
     
     for i in range(len(listOfStudies)):
-        podium.append([listOfStudies[i],listOfStudies[i].testAccuracy(),i])
+        
+        if isinstance(listOfStudies[i],tf.keras.models.Sequential):
+            #do things specific to tf.keras
+            evaluate(listOfStudies[i],y_test,X_test,y_train=y_train,X_train=X_train)
+        else:
+            podium.append([listOfStudies[i],listOfStudies[i].testAccuracy(data,veritas),i])
         
     podium = sorted(podium, key=lambda podium:podium[1][0])#tri par intensite
     podium.reverse()
@@ -239,6 +176,65 @@ def electBestAccuracy(listOfStudies):
     podium_worst=podium[-10:] #10 pires
             
     return podium_bests,podium_worst
+
+def model_list_predict(X_test, model_list):
+    size=10000
+    k = []
+    for model in model_list:
+        k.append(np.argmax(model.predict(X_test.reshape(-1,size,1)), axis = 1))
+    return np.where(np.sum(np.array(k), axis = 0)>(len(model_list)/2),1,0)
+
+def evaluate_list(model_list,y_test,X_test,y_train = None, X_train = None):
+    #print(X_test.shape)
+    y_pred = model_list_predict(X_test,model_list)
+    cc = tf.math.confusion_matrix(np.argmax(y_test, axis = 1), y_pred)
+    print(cc.numpy())
+    if y_train != None:
+        print("""Score sur test : """,accuracy_score(np.argmax(y_test,axis = 1), y_pred),
+          """\nScore sur train : """,accuracy_score(np.argmax(y_train,axis = 1), y_pred))
+    else:
+        print("""Score sur test : """,accuracy_score(np.argmax(y_test,axis = 1), y_pred))
+        
+#def errors(model_list, X_test, y_test):
+#    y_pred = model_list_predict(X_test, model_list)#model.predict_classes(X_test.reshape((-1,10000,1)))
+#
+#    ind = []
+#    y_test_c = np.argmax(y_test, axis = 1)
+#    for i, classe in enumerate(y_pred):
+#        if classe != y_test_c[i]:
+#            ind.append(i)
+#    for i in ind:
+#        df_err = df_test.iloc[i]
+#        if 'âge' in df_err.keys():
+#            print("souche : ",df_err['souche'],"   âge : ",df_err['âge'],"   passage : ",df_err['passage'],"   plaque",df_err['plaque'])
+#        else:
+#            print("souche : ",df_err['souche'],"   maldi : ", df_err['maldi'],"    date : ", df_err['date'],"    clone : ", df_err['clone'])
+
+def evaluate(model,y_test,X_test,y_train = None, X_train = None):
+    size=10000
+    #print(X_test.shape)
+    y_pred = model.predict_classes(X_test.reshape(-1,size,1))
+    cc = tf.math.confusion_matrix(np.argmax(y_test, axis = 1), y_pred)
+    print(cc.numpy())
+    return accuracy_score(np.argmax(y_test,axis = 1), y_pred)
+        
+
+#def error(model, X_test, y_test):
+#    y_pred = model.predict(X_test)#model.predict_classes(X_test.reshape((-1,10000,1)))
+#
+#    ind = []
+#    y_test_c = np.argmax(y_test, axis = 1)
+#    for i, classe in enumerate(y_pred):
+#        if classe != y_test_c[i]:
+#            ind.append(i)
+#    for i in ind:
+#        df_err = df_test.iloc[i]
+#        if 'âge' in df_err.keys():
+#            print("souche : ",df_err['souche'],"   âge : ",df_err['âge'],"   passage : ",df_err['passage'],"   plaque",df_err['plaque'])
+#        else:
+#            print("souche : ",df_err['souche'],"   maldi : ", df_err['maldi'],"    date : ", df_err['date'],"    clone : ", df_err['clone'])
+
+#%%
 
 def MSI4CropNTriplets(data,n):
     new_data=[]
@@ -264,8 +260,113 @@ def mergeClasses(veritas,dict_veritas,merged_id,being_merged_id):
     
     return new_veritas,new_dict
     
+#%%
 
-            
+#Code Aurélien
+
+def model_simple():
+    dropout = 0.3
+    model = tf.keras.models.Sequential([
+        tf.keras.layers.GaussianNoise(500),
+        tf.keras.layers.Conv1D(8, 3, input_shape = (10000,1)),
+        tf.keras.layers.AveragePooling1D(),
+        tf.keras.layers.BatchNormalization(),
+        tf.keras.layers.ReLU(),
+        tf.keras.layers.Dropout(dropout),
+        tf.keras.layers.Conv1D(8, 3),
+        tf.keras.layers.AveragePooling1D(),
+        tf.keras.layers.BatchNormalization(),
+        tf.keras.layers.ReLU(),
+        tf.keras.layers.Dropout(dropout),
+        
+        tf.keras.layers.Conv1D(8, 3),
+        tf.keras.layers.AveragePooling1D(),
+        tf.keras.layers.BatchNormalization(),
+        tf.keras.layers.ReLU(),
+        tf.keras.layers.Dropout(dropout),
+        
+        tf.keras.layers.Flatten(),
+        #tf.keras.layers.Dense(16, activation='relu'),
+        tf.keras.layers.Dropout(dropout),
+        #tf.keras.layers.Dense(100, activation='relu'),
+        tf.keras.layers.Dense(32, activation='relu'),
+        tf.keras.layers.Dense(2, activation='softmax')
+        #tf.keras.layers.Dense(1, activation='linear')
+    ])
+    return model
+def model_complex(size):
+    dropout = 0.3
+    model = tf.keras.models.Sequential([
+        #tf.keras.layers.GaussianNoise(500),
+        tf.keras.layers.Conv1D(8, 50, input_shape = (None,size)),
+        tf.keras.layers.BatchNormalization(),
+        tf.keras.layers.ReLU(),
+        tf.keras.layers.MaxPooling1D(),
+        tf.keras.layers.Dropout(dropout),
+        tf.keras.layers.Conv1D(16, 25),
+        tf.keras.layers.BatchNormalization(),
+        tf.keras.layers.ReLU(),
+        tf.keras.layers.MaxPooling1D(),
+        tf.keras.layers.Dropout(dropout),
+        tf.keras.layers.Conv1D(32, 10),
+        tf.keras.layers.BatchNormalization(),
+        tf.keras.layers.ReLU(),
+        tf.keras.layers.MaxPooling1D(),
+        tf.keras.layers.Dropout(dropout),
+        tf.keras.layers.Conv1D(64, 10),
+        tf.keras.layers.BatchNormalization(),
+        tf.keras.layers.ReLU(),
+        tf.keras.layers.MaxPooling1D(),
+        tf.keras.layers.Dropout(dropout),
+        #tf.keras.layers.Conv1D(16, 10),
+        #tf.keras.layers.AveragePooling1D(),
+        #tf.keras.layers.BatchNormalization(),
+        #tf.keras.layers.ReLU(),
+        #tf.keras.layers.Dropout(dropout),
+        #tf.keras.layers.Conv1D(16, 10),
+        #tf.keras.layers.AveragePooling1D(),
+        #tf.keras.layers.BatchNormalization(),
+        #tf.keras.layers.ReLU(),
+        #tf.keras.layers.Dropout(0.2),
+        
+        tf.keras.layers.Flatten(),
+        tf.keras.layers.Dense(140, activation='relu'),
+        #tf.keras.layers.Dropout(dropout),
+        #tf.keras.layers.Dense(100, activation='relu'),
+        tf.keras.layers.Dense(130, activation='relu'),
+        tf.keras.layers.Dense(2, activation='softmax',input_shape = (None,size))
+        #tf.keras.layers.Dense(1, activation='linear')
+    ])
+    return model
+
+def precision_model(base_model,X_train,X_test,y_train,y_test):
+    
+    size=len(X_train)
+    length=len(X_train[0])
+    
+    #Mesure du fitting du modèle complexe
+    
+    #Préparation à l'entraînement du modèle complexe
+    model=base_model
+    mc = tf.keras.callbacks.ModelCheckpoint('best_model_flavus.h5', monitor='val_accuracy', mode='max', verbose=0, save_best_only=True)
+    model.compile(optimizer=tf.keras.optimizers.Adam(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.0, amsgrad=False),
+                loss='categorical_crossentropy',
+                metrics=['accuracy'])
+    
+    np_X_train=np.array(X_train)
+    np_y_train=np.array(y_train)
+    np_X_test=np.array(X_test)
+    np_y_test=np.array(y_test)
+    
+    #Entraînement
+    if X_test.shape[0] != 0:
+        model.fit(np_X_train.reshape(-1,size,1), np_y_train, epochs=50,verbose = 1,validation_data=(np_X_test.reshape(-1,size,1), np_y_test), callbacks=[mc], class_weight={0:5,1:1},batch_size=length)
+        model.load_weights('best_model_flavus.h5')
+    else:
+        #print("coucou")
+        model.fit(np_X_train.reshape(-1,size,1), np_y_train, epochs=50,verbose = 0, callbacks=[], class_weight={0:1,1:1})
+    
+    return model     
 
 #%%
 

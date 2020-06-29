@@ -15,6 +15,8 @@ if (root_folder not in sys.path):
 
 import mlsi.msi
 
+import pandas as pd
+
 from tkinter import Tk
 from tkinter.filedialog import askopenfilename, askdirectory
 
@@ -448,7 +450,9 @@ def findLatestConcatenatedFile(folder,func_used):
                         max_time=current_time
                         
     #Ne pas oublier le '0' quand on est le matin..
-    if max_time<100000:
+    if max_time<10000:
+      last_time='00'+str(max_time)
+    elif max_time<100000:
       last_time='0'+str(max_time)
     else:
       last_time=str(max_time)
@@ -745,6 +749,54 @@ def extractCompactedEntries(fichier,limit=-1):
             L.append(donnee_organisee)
             i+=1
         return L
+    
+def extractConcatenatedEntriesAndConvertToPandas(fichier,limit):
+    
+    dim=__getDimensionnality(fichier)
+        
+    with open(fichier,'r') as src:
+        L=[]
+        i=0
+        entries=[]
+        for line in src:
+            if(i>=limit and i!=-1):
+                #Faut mettre une limite sinon c'est la merde, ça prend trop de temps à calculer...
+                break
+            
+            #https://stackoverflow.com/questions/1574678/efficient-way-to-convert-strings-from-split-function-to-ints-in-python
+            #map est légèrement plus rapide et moins consommateur de CPU
+            
+            nom=line
+            characteristics=__extractEntryCharacteristics(src, dim)
+            
+            
+            if dim==1:
+                #3 composantes
+                donnee_brute=characteristics[2]
+            else:
+                #5 composantes
+                donnee_brute=characteristics[4]
+            
+            donnee_brute=donnee_brute.split('\n')[0]
+            donnee_organisee=list(map(float,donnee_brute.split(',')))
+            L.append(donnee_organisee)
+            
+            donnees_nom=nom.split('_')
+            maldi=donnees_nom[0]
+            age=donnees_nom[1]
+            date=donnees_nom[2]
+            methode=donnees_nom[-1]
+            souche=donnees_nom[-2]
+            plaque=donnees_nom[-3]
+            clone='_'.join(donnees_nom[3:len(donnees_nom)-3])
+            spectre=characteristics[0]
+            
+            entry=np.array([i,maldi,date,clone,souche,age,plaque,spectre,L])
+            entries.append(entry)
+            i+=1
+            
+    columns_names = ["unnamed","maldi","date","clone","souche","âge","plaque","spectre","data"]
+    return pd.DataFrame(np.array(entries),columns=columns_names)
 
 #%%
         
